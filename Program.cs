@@ -27,10 +27,10 @@ namespace TotChef
                 info.Invoke(null, new object[] { args.Skip(1).ToArray() });
             } else
             {
-                Tools.WriteColoredLine($"Unknown command {methodName}, use \"totchef help\" to get the list of commands", ConsoleColor.Red);
+                Tools.ExitError($"Unknown command {methodName}, use \"totchef help\" to get the list of commands");
             }
 
-            return;
+            Environment.Exit(0);
         }
 
         [Description("Setup the devkit path and save it to config\nsetup C:/DevKit/Path")]
@@ -622,7 +622,7 @@ namespace TotChef
         }
 
         [Description("Validate a git repository and see if it is ready for cooking\nvalidategit ModName")]
-        static void ValidateGitCMD(string[] args)
+        static void ValidateCMD(string[] args)
         {
             Tools.ValidateArgs(args, "Mod Name");
             Config config = Config.LoadConfig();
