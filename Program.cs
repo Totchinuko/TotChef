@@ -532,6 +532,7 @@ namespace TotChef
             Tools.WriteColoredLine(listing.rapport, ConsoleColor.Cyan);
         }
 
+        [Description("Compare the pak files inside a modlist and evaluate the conflicts\nconflict /path/to/modlist.txt")]
         static void ConflictCMD(string[] args)
         {
             Tools.ValidateArgs(args, "Mod List");
@@ -581,6 +582,7 @@ namespace TotChef
             }
         }
 
+        [Description("Return the path of a given mod folder\npathto ModName")]
         static void PathToCMD(string[] args)
         {
             Tools.ValidateArgs(args, "Mod Name");
