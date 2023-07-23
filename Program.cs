@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using LibGit2Sharp;
+using System.ComponentModel;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.IO;
@@ -588,6 +589,34 @@ namespace TotChef
             if (!clerk.Validate()) return;
 
             Console.Write(clerk.ModFolder.PosixFullName());
+        }
+
+        [Description("Checkout the branch corresponding the mod name on the ModsShared repository or checkout master\ncheckout ModName")]
+        static void CheckoutCMD(string[] args)
+        {
+            Tools.ValidateArgs(args, "Mod Name");
+            Config config = Config.LoadConfig();
+            KitchenClerk clerk = config.MakeClerk(args[0]);
+            if (!clerk.Validate()) return;
+
+            if (!Repository.IsValid(clerk.ModsShared.FullName)) Environment.Exit(0);
+            if (clerk.IsGitRepoDirty(clerk.ModsShared)) Tools.ExitError("ModsShared repository is dirty");
+
+            using (Repository repo = new Repository(clerk.ModsShared.FullName))
+            {
+                Branch? branch = null;
+                foreach (Branch b in repo.Branches)
+                    if (b.FriendlyName == clerk.ModName)
+                        branch = b;
+
+                if (branch == null)
+                    branch = repo.Branches["master"];
+
+                if (repo.Head.CanonicalName == branch.CanonicalName) Environment.Exit(0);
+                Commands.Checkout(repo, branch);
+                Tools.WriteColoredLine($"ModsShared repository is now on {branch.FriendlyName}", ConsoleColor.Cyan);
+                Environment.Exit(0);
+            }
         }
 
         static void HelpCMD(string[] args)
