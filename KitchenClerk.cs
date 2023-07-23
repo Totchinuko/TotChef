@@ -243,7 +243,7 @@ namespace TotChef
         {
             using(Repository repo = new Repository(ModsShared.FullName))
             {
-                return repo.Head.FriendlyName == ModName || !HasDedicatedModsSharedBranch();
+                return repo.Head.FriendlyName == ModName || (!HasDedicatedModsSharedBranch() && repo.Head.FriendlyName == "master");
             }
         }
 
