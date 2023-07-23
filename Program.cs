@@ -129,12 +129,14 @@ namespace TotChef
                 checkedFiles.Add(localFile);
 
                 FileInfo from = new FileInfo(file);
-                FileInfo to = new FileInfo(Path.Join(clerk.ModCookedFolder.FullName, localFile));
+                FileInfo to = new FileInfo(Path.Join(clerk.ModCookedFolder.FullName, localFile) + Path.GetExtension(file));
                 if (to.Directory == null) continue;
 
                 if(verbose)
                     Tools.WriteColoredLine("Copy: " + from.FullName, ConsoleColor.DarkGray);
                 Directory.CreateDirectory(to.Directory.FullName);
+                if (to.Exists)
+                    Tools.ExitError($"Could not copy the following file, already exists\n{to.FullName}");
                 from.CopyTo(to.FullName, true);
             }
 
