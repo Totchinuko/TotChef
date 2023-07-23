@@ -621,6 +621,20 @@ namespace TotChef
             }
         }
 
+        [Description("Validate a git repository and see if it is ready for cooking\nvalidategit ModName")]
+        static void ValidateGitCMD(string[] args)
+        {
+            Tools.ValidateArgs(args, "Mod Name");
+            Config config = Config.LoadConfig();
+            KitchenClerk clerk = config.MakeClerk(args[0]);
+            if (!clerk.Validate()) return;
+
+            if (clerk.IsGitRepoDirty(clerk.ModsShared))
+                Tools.ExitError("ModsShared repo is dirty");
+            if (clerk.IsGitRepoDirty(clerk.ModFolder))
+                Tools.ExitError($"Mod {clerk.ModName} repo is dirty");
+        }
+
         static void HelpCMD(string[] args)
         {
             Tools.WriteColoredLine("Tot!Chef 1.0.0", ConsoleColor.Cyan);
