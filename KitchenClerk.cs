@@ -71,13 +71,13 @@ namespace TotChef
         {
             if(!IsValidDevKit)
             {
-                Tools.WriteColoredLine("Invalid DevKit path, please setup again", ConsoleColor.Red);
+                Tools.ExitError("Invalid DevKit path, please setup again");
                 return false;
             }
 
             if(!IsValidMod && !onlyDevKit)
             {
-                Tools.WriteColoredLine("Invalid mod name", ConsoleColor.Red);
+                Tools.ExitError("Invalid mod name");
                 return false;
             }
             return true;

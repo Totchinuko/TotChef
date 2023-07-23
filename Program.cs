@@ -54,7 +54,7 @@ namespace TotChef
             KitchenClerk clerk = new KitchenClerk(config.DevKitPath);
             if (!clerk.IsValidDevKit)
             {
-                Tools.WriteColoredLine("Invalid DevKit Path", ConsoleColor.Red);
+                Tools.ExitError("Invalid DevKit Path");
                 return;
             }
 
