@@ -290,6 +290,8 @@ namespace TotChef
             KitchenClerk clerk = config.MakeClerk(args[0]);
             if (!clerk.Validate()) return;
 
+            CheckoutCMD(args);
+
             clerk.SwitchActive();
             Tools.WriteColoredLine($"Set {clerk.ModName} as active", ConsoleColor.Cyan);
 
@@ -552,11 +554,13 @@ namespace TotChef
                 if(path.StartsWith("*"))
                     path = path.Substring(1);
                 FileInfo mod = new FileInfo(path);
-                if(mod.Exists)
+                if (mod.Exists)
                 {
                     Tools.WriteColoredLine($"Parsing {mod.FullName}...", ConsoleColor.Cyan);
                     listings.Add(new PakListing(clerk.QueryPakFile(mod), mod.Name));
-                }                    
+                }
+                else
+                    Tools.WriteColoredLine($"Not Found: {mod.FullName}", ConsoleColor.DarkGray);
             }
 
             Dictionary<string, List<PakedFile>> folded = new Dictionary<string, List<PakedFile>>();
@@ -603,7 +607,7 @@ namespace TotChef
             KitchenClerk clerk = config.MakeClerk(args[0]);
             if (!clerk.Validate()) return;
 
-            if (!Repository.IsValid(clerk.ModsShared.FullName)) Environment.Exit(0);
+            if (!Repository.IsValid(clerk.ModsShared.FullName)) return;
             if (clerk.IsGitRepoDirty(clerk.ModsShared)) Tools.ExitError("ModsShared repository is dirty");
 
             using (Repository repo = new Repository(clerk.ModsShared.FullName))
@@ -616,10 +620,9 @@ namespace TotChef
                 if (branch == null)
                     branch = repo.Branches["master"];
 
-                if (repo.Head.CanonicalName == branch.CanonicalName) Environment.Exit(0);
+                if (repo.Head.CanonicalName == branch.CanonicalName) return;
                 Commands.Checkout(repo, branch);
                 Tools.WriteColoredLine($"ModsShared repository is now on {branch.FriendlyName}", ConsoleColor.Cyan);
-                Environment.Exit(0);
             }
         }
 
