@@ -38,7 +38,7 @@ namespace TotChef
         public FileInfo ModCookInfo => new FileInfo(Path.Join(ModLocalFolder.FullName, "CookInfo.ini")).GetProperCasedFileInfo();
         public FileInfo ModInfo => new FileInfo(Path.Join(ModFolder.FullName, "modinfo.json")).GetProperCasedFileInfo();
 
-        public bool IsValidMod => ModFolder.Exists;
+        public bool IsValidMod => ModInfo.Exists;
 
         public string ModName => new DirectoryInfo(Path.Join(ModsFolder.FullName, modName)).GetProperCasedDirectoryInfo().Name;
 
@@ -65,6 +65,8 @@ namespace TotChef
                 Tools.ExitError("DevKit path is Invalid, use totchef setup to configure it");
             this.devKitPath = devKitPath;
             this.modName = modName;
+            if (this.modName == ".")
+                this.modName = GetCurrentDirectoryMod() ?? "";
         }
 
         public bool Validate(bool onlyDevKit = false)
@@ -302,6 +304,19 @@ namespace TotChef
                 result.Add(converted);
             }
             return result;
+        }
+
+        public string? GetCurrentDirectoryMod()
+        {
+            DirectoryInfo current = new DirectoryInfo(Directory.GetCurrentDirectory());
+            if(current.FullName.StartsWith(ModsFolder.FullName))
+            {
+                string local = current.FullName.RemoveRootFolder(ModsFolder.FullName);
+                string modName = local.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries)[0];
+                if (File.Exists(Path.Join(ModsFolder.FullName, modName, "modinfo.json")))
+                    return modName;
+            }
+            return null;
         }
     }
 }
