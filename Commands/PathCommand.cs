@@ -19,7 +19,7 @@ namespace Tot.Commands
         public CommandCode Execute()
         {
             string path = "";
-            if(string.IsNullOrEmpty(ModName))
+            if(!string.IsNullOrEmpty(ModName))
             {
                 if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
                     return clerk.LastError;
