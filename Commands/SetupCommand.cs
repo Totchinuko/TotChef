@@ -12,7 +12,7 @@ namespace Tot.Commands
     [Verb("setup", HelpText = "Setup the Dev Kit path")]
     internal class SetupCommand : ICommand
     {
-        [Value(0, HelpText = "Path to the Dev Kit", Required = true)]
+        [Option('p', "devkit-path", HelpText = "Path to the Dev Kit", Required = true)]
         public string? path { get; set; }
 
         public CommandCode Execute()
