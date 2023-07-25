@@ -7,9 +7,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace TotChef
+namespace Tot
 {
-    public class Stove
+    internal class Stove
     {
         private bool verbose;
         Process process;
@@ -28,7 +28,7 @@ namespace TotChef
             process.StartInfo.Arguments = string.Join(" ",
                     clerk.UProject.FullName,
             string.Join(" ", clerk.CookArgs),
-                    clerk.CookLogArg + "=" + clerk.CookLogFile.FullName
+                    KitchenClerk.CookLogArg + "=" + clerk.CookLogFile.FullName
                 );
             process.OutputDataReceived += OnOutputDataReceived;
         }

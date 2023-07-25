@@ -7,12 +7,12 @@ using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TotChef
+namespace Tot
 {
-    public class KitchenClerk
+    internal class KitchenClerk
     {
         public DirectoryInfo TempFolder => new DirectoryInfo(Path.Join(Path.GetTempPath(), "../ConanSandbox")).GetProperCasedDirectoryInfo();
-        public DirectoryInfo DevKit => new DirectoryInfo(devKitPath).GetProperCasedDirectoryInfo();
+        public DirectoryInfo DevKit => new DirectoryInfo(config.DevKitPath).GetProperCasedDirectoryInfo();
         public DirectoryInfo DevKitContent => new DirectoryInfo(Path.Join(DevKit.FullName, "Games/ConanSandbox/Content")).GetProperCasedDirectoryInfo();
         public DirectoryInfo ModsFolder => new DirectoryInfo(Path.Join(DevKitContent.FullName, "Mods")).GetProperCasedDirectoryInfo();
         public DirectoryInfo ModsShared => new DirectoryInfo(Path.Join(DevKitContent.FullName, "ModsShared")).GetProperCasedDirectoryInfo();
@@ -27,7 +27,7 @@ namespace TotChef
         public DirectoryInfo ModPakFolder => new DirectoryInfo(Path.Join(PakFiles.FullName, ModName)).GetProperCasedDirectoryInfo();
         public DirectoryInfo ModCookedFolder => new DirectoryInfo(Path.Join(CookedFiles.FullName, ModName)).GetProperCasedDirectoryInfo();
 
-        public FileInfo UE4CMD => new FileInfo(Path.Join(DevKit.FullName, "Engine/Binaries/Win64/UE4Editor-Cmd.exe")).GetProperCasedFileInfo();
+        public FileInfo UE4CMD => new FileInfo(Path.Join(DevKit.FullName, CMDBinary)).GetProperCasedFileInfo();
         public FileInfo UProject => new FileInfo(Path.Join(DevKit.FullName, "Games/ConanSandbox/ConanSandbox.uproject")).GetProperCasedFileInfo();
         public FileInfo UnrealPak => new FileInfo(Path.Join(DevKit.FullName, "Engine/Binaries/Win64/UnrealPak.exe")).GetProperCasedFileInfo();
         public FileInfo UE4Editor => new FileInfo(Path.Join(DevKit.FullName, "Engine/Binaries/Win64/UE4Editor.exe")).GetProperCasedFileInfo();
@@ -37,57 +37,74 @@ namespace TotChef
         public FileInfo ModPakFileBackup => new FileInfo(Path.Join(ModPakFolder.FullName, ModName + ".backup.pak")).GetProperCasedFileInfo();
         public FileInfo ModCookInfo => new FileInfo(Path.Join(ModLocalFolder.FullName, "CookInfo.ini")).GetProperCasedFileInfo();
         public FileInfo ModInfo => new FileInfo(Path.Join(ModFolder.FullName, "modinfo.json")).GetProperCasedFileInfo();
-
-        public bool IsValidMod => ModInfo.Exists;
-
         public string ModName => new DirectoryInfo(Path.Join(ModsFolder.FullName, modName)).GetProperCasedDirectoryInfo().Name;
 
-        public bool IsValidDevKit => UE4CMD.Exists;
+        public bool IsValidMod => ModInfo.Exists;
+        public bool IsValidDevKit => !string.IsNullOrEmpty(config?.DevKitPath) && UE4CMD.Exists;
 
-        private string devKitPath;
+        private Config config;
         private string modName;
 
-        public readonly string IncludePrefix = "FilesToCook=";
-        public readonly string ExcludePrefix = "UnselectedFiles=";
-        public readonly string ActiveFile = "active.txt";
-        public readonly string CookInfoHeader = "[/CookInfo]";
-        public readonly string AssetExt = "uasset";
-        public readonly string CookLogArg = "-abslog";
+        public const string CMDBinary = "Engine/Binaries/Win64/UE4Editor-Cmd.exe";
+        public const string IncludePrefix = "FilesToCook=";
+        public const string ExcludePrefix = "UnselectedFiles=";
+        public const string ActiveFile = "active.txt";
+        public const string CookInfoHeader = "[/CookInfo]";
+        public const string AssetExt = "uasset";
+        public const string CookLogArg = "-abslog";
 
         public readonly string[] CookArgs = { "-installed", "-ModDevKit", "-run=cookmod", "targetplatform=WindowsNoEditor", "-iterate", "-compressed", "-stdout", "-unattended", "-fileopenlog" };
 
         public readonly string[] EditorArgs = { "-ModDevKit", "-Installed" };
 
+        private CommandCode lastError;
 
-        public KitchenClerk(string devKitPath, string modName = "") 
+        public CommandCode LastError => lastError;
+
+        public KitchenClerk(Config config, string modName = "") 
         {
-            if (string.IsNullOrEmpty(devKitPath))
-                Tools.ExitError("DevKit path is Invalid, use totchef setup to configure it");
-            this.devKitPath = devKitPath;
-            this.modName = modName;
-            if (this.modName == ".")
-                this.modName = GetCurrentDirectoryMod() ?? "";
+            this.config = config;
+            if(IsValidDevKit)
+                this.modName = string.IsNullOrEmpty(modName) ? GetCurrentDirectoryMod() ?? "" : modName;
+            else
+                this.modName = modName;
         }
 
-        public bool Validate(bool onlyDevKit = false)
+        public static bool CreateClerk(string? modName, out KitchenClerk clerk)
         {
-            if(!IsValidDevKit)
+            clerk = new KitchenClerk(Config.LoadConfig(), modName ?? "");
+            if(!clerk.IsValidDevKit)
             {
-                Tools.ExitError("Invalid DevKit path, please setup again");
+                clerk.lastError = new CommandCode { code = CommandCode.DevKitPathInvalid, message = "Dev Kit path is invalid" };
                 return false;
             }
 
-            if(!IsValidMod && !onlyDevKit)
+            if(!clerk.IsValidMod)
             {
-                Tools.ExitError("Invalid mod name");
+                clerk.lastError = new CommandCode { code = CommandCode.ModNameIsInvalid, message = $"Mod Name {modName} is invalid" };
                 return false;
             }
             return true;
         }
 
-        public void DeleteAnyActive()
+        public static bool CreateDevKitClerk(out KitchenClerk clerk)
         {
-            ModsFolder.Check();
+            clerk = new KitchenClerk(Config.LoadConfig());
+            if (!clerk.IsValidDevKit)
+            {
+                clerk.lastError = new CommandCode { code = CommandCode.DevKitPathInvalid, message = "Dev Kit path is invalid" };
+                return false;
+            }
+            return true;
+        }
+
+        public bool DeleteAnyActive()
+        {
+            if(!ModsFolder.Exists)
+            {
+                lastError = CommandCode.NotFound(ModsFolder);
+                return false;
+            }
             foreach(DirectoryInfo dir in ModsFolder.GetDirectories())
             {
                 FileInfo file = new FileInfo(Path.Join(dir.FullName, ActiveFile));
@@ -96,18 +113,27 @@ namespace TotChef
                     file.Delete();
                 }
             }
+            return true;
         }
 
-        public void CreateActive(string modName)
+        public bool CreateActive(string modName)
         {
             FileInfo file = new FileInfo(Path.Join(ModsFolder.FullName, modName, ActiveFile)).GetProperCasedFileInfo();
-            File.WriteAllText(file.FullName, "");
+            try
+            {
+                File.WriteAllText(file.FullName, "");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                lastError = new CommandCode { code = CommandCode.UnknownError, message = ex.Message };
+                return false;
+            }
         }
 
-        public void SwitchActive()
+        public bool SwitchActive()
         {
-            DeleteAnyActive();
-            CreateActive(ModName);
+            return DeleteAnyActive() && CreateActive(ModName);
         }
 
         public void GetCookInfo(out List<string> included, out List<string> excluded)
@@ -128,9 +154,13 @@ namespace TotChef
             }
         }
 
-        public void SetCookInfo(List<string> included, List<string> excluded)
+        public bool SetCookInfo(List<string> included, List<string> excluded)
         {
-            ModCookInfo.Check();
+            if(!ModCookInfo.Exists)
+            {
+                lastError = CommandCode.NotFound(ModCookInfo);
+                return false;
+            }
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(CookInfoHeader);
             included.Sort();
@@ -140,12 +170,33 @@ namespace TotChef
                 sb.AppendLine(ExcludePrefix+line);
             foreach( string line in included)
                 sb.AppendLine(IncludePrefix+line);
-            File.WriteAllText(ModCookInfo.FullName, sb.ToString());
+
+            try
+            {
+                File.WriteAllText(ModCookInfo.FullName, sb.ToString());
+                return true;
+            }
+            catch (Exception ex)
+            {
+                lastError = new CommandCode { code = CommandCode.UnknownError, message = ex.Message };
+                return false;
+            }
         }
 
-        public List<string> UpdateIncludedCookInfo(DirectoryInfo directory, ref List<string> included, List<string> excluded)
+        public List<string> RemoveMissingFiles(ref List<string> included, ref List<string> excluded)
         {
-            directory.Check();
+            List<string> change = TrimFileNotFound(ref included);
+            change.AddRange(TrimFileNotFound(ref excluded));
+            return change;
+        }
+
+        public List<string>? UpdateIncludedCookInfo(DirectoryInfo directory, ref List<string> included, List<string> excluded)
+        {
+            if (!directory.Exists)
+            {
+                lastError = CommandCode.NotFound(directory);
+                return null;
+            }
             string[] files = Directory.GetFiles(directory.FullName, $"*.{AssetExt}", SearchOption.AllDirectories);
             List<string> added = new List<string>();
             foreach (string file in files)
@@ -154,23 +205,6 @@ namespace TotChef
                 if(!included.Contains(info.PosixFullName()) && !excluded.Contains(info.PosixFullName()))
                 {
                     included.Add(info.PosixFullName());
-                    added.Add(info.PosixFullName());
-                }
-            }
-            return added;
-        }
-
-        public List<string> UpdateExcludedCookInfo(DirectoryInfo directory, List<string> included, ref List<string> excluded)
-        {
-            directory.Check();
-            string[] files = Directory.GetFiles(directory.FullName, $"*.{AssetExt}", SearchOption.AllDirectories);
-            List<string> added = new List<string>();
-            foreach (string file in files)
-            {
-                FileInfo info = new FileInfo(file);
-                if (!included.Contains(info.PosixFullName()) && !excluded.Contains(info.PosixFullName()))
-                {
-                    excluded.Add(info.PosixFullName());
                     added.Add(info.PosixFullName());
                 }
             }
@@ -205,17 +239,6 @@ namespace TotChef
                     removed.Add(file);
                 }
             return removed;
-        }
-
-        public void CleanKitchen()
-        {
-            CookingFolder.Check();
-            if (CookingFolder.GetFiles().Length == 0 && CookingFolder.GetDirectories().Length == 0) return;
-
-            foreach (FileInfo fileInfo in CookingFolder.GetFiles())
-                fileInfo.Delete();
-            foreach (DirectoryInfo directory in CookingFolder.GetDirectories())
-                directory.Delete(true);
         }
 
         public bool IsGitRepoDirty(DirectoryInfo directory)
@@ -270,9 +293,14 @@ namespace TotChef
             Console.ResetColor();
         }
 
-        public string QueryPakFile(FileInfo file)
+        public bool QueryPakFile(FileInfo file, out string output)
         {
-            file.Check();
+            output = "";
+            if(!file.Exists)
+            {
+                lastError = CommandCode.NotFound(file);
+                return false;
+            }
             Process p = new Process();
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.RedirectStandardOutput = true;
@@ -283,9 +311,9 @@ namespace TotChef
                     "-List"
                 });
             p.Start();
-            string output = p.StandardOutput.ReadToEnd();
+            output = p.StandardOutput.ReadToEnd();
             p.WaitForExit();
-            return output;
+            return true;
         }
 
         public List<string> ConvertToCookingFolder(List<string> files)
@@ -317,6 +345,104 @@ namespace TotChef
                     return modName;
             }
             return null;
+        }
+
+        public void CleanCookedFolder()
+        {
+            if (ModCookedFolder.Exists && (ModCookedFolder.GetFiles().Length != 0 || ModCookedFolder.GetDirectories().Length != 0))
+            {
+                foreach (FileInfo fileInfo in ModCookedFolder.GetFiles())
+                    fileInfo.Delete();
+                foreach (DirectoryInfo directory in ModCookedFolder.GetDirectories())
+                    directory.Delete(true);
+            }
+        }
+
+        public bool CopyAndFilter(bool verbose)
+        {
+            GetCookInfo(out List<string> included, out List<string> excluded);
+            List<string> cookedFiles = Directory.GetFiles(CookingFolder.FullName, "*", SearchOption.AllDirectories).ToList();
+            HashSet<string> validFiles = ConvertToCookingFolder(included).ToHashSet();
+            HashSet<string> checkedFiles = new HashSet<string>();
+
+            for (int i = 0; i < cookedFiles.Count; i++)
+            {
+                string file = cookedFiles[i];
+                string localFile = file.RemoveRootFolder(CookingFolder).PosixFullName().RemoveExtension();
+
+                if (!validFiles.Contains(localFile))
+                {
+                    Tools.WriteColoredLine($"Ignoring: {file}", ConsoleColor.Yellow);
+                    continue;
+                }
+                checkedFiles.Add(localFile);
+
+                FileInfo from = new FileInfo(file);
+                FileInfo to = new FileInfo(Path.Join(ModCookedFolder.FullName, localFile) + Path.GetExtension(file));
+                if (to.Directory == null)
+                {
+                    Tools.WriteColoredLine($"Ignoring: {file}", ConsoleColor.Yellow);
+                    continue;
+                }
+
+                if (verbose)
+                    Tools.WriteColoredLine("Copy: " + from.FullName, ConsoleColor.DarkGray);
+
+                Directory.CreateDirectory(to.Directory.FullName);
+                if (to.Exists)
+                {
+                    lastError = new CommandCode { code = CommandCode.UnknownError, message = $"Could not copy the following file, already exists\n{to.FullName}" };
+                    return false;
+                }
+                from.CopyTo(to.FullName, true);
+            }
+
+            if (checkedFiles.Count != validFiles.Count)
+            {
+                foreach (string file in validFiles.Except(checkedFiles))
+                    Tools.WriteColoredLine(file, ConsoleColor.Red);
+                lastError = new CommandCode { code = CommandCode.UnknownError, message = $"Cooking encountered an error, {checkedFiles.Count} files cooked, but {included.Count} were expected" };
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool CheckoutModsSharedBranch(out string branchName)
+        {
+            branchName = "master";
+            if (!Repository.IsValid(ModsShared.FullName))
+                return true;
+            if (IsGitRepoDirty(ModsShared))
+            {
+                lastError = new CommandCode { code = CommandCode.RepositoryIsDirty, message = $"Shared repository is dirty" };
+                return false;
+            }
+
+            using (Repository repo = new Repository(ModsShared.FullName))
+            {
+                try
+                {
+                    Branch? branch = null;
+                    foreach (Branch b in repo.Branches)
+                        if (b.FriendlyName == ModName)
+                            branch = b;
+
+                    if (branch == null)
+                        branch = repo.Branches["master"];
+
+                    branchName = branch.FriendlyName;
+                    if (repo.Head.CanonicalName == branch.CanonicalName)
+                        return true;
+                    LibGit2Sharp.Commands.Checkout(repo, branch);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    lastError = new CommandCode { code = CommandCode.UnknownError, message = ex.Message };
+                    return false;
+                }
+            }
         }
     }
 }

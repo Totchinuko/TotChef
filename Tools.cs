@@ -8,7 +8,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TotChef
+namespace Tot
 {
     public static class Tools
     {
@@ -80,55 +80,6 @@ namespace TotChef
             Console.BackgroundColor = background;
             Console.Write(text);
             Console.ResetColor();
-        }
-
-        public static MethodInfo? FindMethodCaseInsensitive(this Type type, string name, BindingFlags flags)
-        {
-            foreach(MethodInfo method in type.GetMethods(flags))
-            {
-                if(method.Name.ToLower() == name.ToLower())
-                    return method;
-            }
-            return null;
-        }
-
-        public static void Check(this FileInfo fileInfo, FileAccess access = FileAccess.Read)
-        {
-            if (!fileInfo.Exists)
-            {
-                ExitError($"File not found {fileInfo.PosixFullName()}");
-            }
-
-            try
-            {
-                fileInfo.Open(FileMode.Open, access).Dispose();
-            }
-            catch (IOException)
-            {
-                ExitError($"Access Error {fileInfo.PosixFullName()}");
-            }
-        }
-        
-        public static void Check(this DirectoryInfo dirInfo)
-        {
-            if (!dirInfo.Exists)
-            {
-                ExitError($"Directory not found {dirInfo.PosixFullName()}");
-            }
-        }
-
-        public static void ValidateArgs(string[] args, params string[] expected)
-        {
-            if (args.Length < expected.Length)
-            {
-                ExitError($"Too few arguments, expecting {string.Join(",", expected)}");
-            }
-        }
-
-        public static void ExitError(string message)
-        {
-            WriteColoredLine(message, ConsoleColor.Red);
-            Environment.Exit(1);
         }
 
         public static bool AreShaIdentical(this List<PakedFile> files)

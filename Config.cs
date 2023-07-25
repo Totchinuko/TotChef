@@ -7,8 +7,9 @@ using System.Text.Json;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using Tot;
 
-namespace TotChef
+namespace Tot
 {
     internal class Config
     {
@@ -16,25 +17,24 @@ namespace TotChef
         [JsonIgnore]
         public bool IsValid => !string.IsNullOrEmpty(DevKitPath);
 
-        private static string ConfigFileName => "TotChef.json";
+        private const string ConfigFileName = "Tot.json";
 
         public Config() 
         { 
             DevKitPath = "";
         }
 
-        public KitchenClerk MakeClerk(string modFolder)
-        {
-            return new KitchenClerk(DevKitPath, modFolder);
-        }
-
         public static Config LoadConfig()
         {
-            string configPath = GetConfigPath();
+            string configPath = GetConfigPath() ?? "";
             string json = "";
             if (File.Exists(configPath))
             {
-                json = File.ReadAllText(configPath);
+                try
+                {
+                    json = File.ReadAllText(configPath);
+                }
+                catch { }
             }
             if (string.IsNullOrEmpty(json))
                 return new Config();
@@ -47,18 +47,15 @@ namespace TotChef
         {
             JsonSerializerOptions option = new JsonSerializerOptions { WriteIndented = true };
             string json = JsonSerializer.Serialize(this, option);
-            string configPath = GetConfigPath();
-            Console.WriteLine(configPath);
+            string? configPath = GetConfigPath() ?? "";
             File.WriteAllText(configPath, json);
         }
 
-        private static string GetConfigPath()
+        internal static string? GetConfigPath()
         {
             string? configPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            if (configPath == null || !Directory.Exists(configPath))
-            {
-                throw new Exception("Application path cannot be accessed");
-            }
+            if (string.IsNullOrEmpty(configPath))
+                return null;
             configPath = Path.Combine(configPath, ConfigFileName);
             return configPath;
         }
