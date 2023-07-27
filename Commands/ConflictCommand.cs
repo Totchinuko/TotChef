@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Tot.Commands
 {
     [Verb("conflict", HelpText = "Process a mod list to highlight common files")]
-    internal class ConflictCommand : ModBasedCommand, ICommand
+    internal class ConflictCommand : ICommand
     {
         [Value(0, HelpText = "Path to the mod list", Required = true)]
         public string? path { get; set; }
