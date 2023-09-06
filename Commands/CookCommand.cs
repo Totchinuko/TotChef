@@ -11,6 +11,9 @@ namespace Tot.Commands
     [Verb("cook", HelpText = "Start a cook process for the mod")]
     internal class CookCommand : ModBasedCommand, ICommand
     {
+        [Option('f', "force", HelpText = "Force the cook process even if the repo is dirty")]
+        public bool force { get; set; }
+
         [Option('v', "verbose", HelpText = "Display the Dev Kit cook output")]
         public bool Verbose { get; set; }
 
@@ -19,9 +22,9 @@ namespace Tot.Commands
             if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
                 return clerk.LastError;
 
-            if (clerk.IsGitRepoDirty(clerk.ModsShared))
+            if (clerk.IsGitRepoDirty(clerk.ModsShared) && !force)
                 return new CommandCode { code = CommandCode.RepositoryIsDirty, message = "ModsShared repo is dirty" };
-            if (clerk.IsGitRepoDirty(clerk.ModFolder))
+            if (clerk.IsGitRepoDirty(clerk.ModFolder) && !force)
                 return new CommandCode { code = CommandCode.RepositoryIsDirty, message = $"Mod {clerk.ModName} repo is dirty" };
             if (!clerk.IsModsSharedBranchValid())
                 return new CommandCode { code = CommandCode.RepositoryWrongBranch, message = "Dedicated ModsShared branch is not checked out" };
@@ -33,7 +36,7 @@ namespace Tot.Commands
             clerk.GetCookInfo(out List<string> included, out List<string> excluded);
             List<string>? change = clerk.UpdateIncludedCookInfo(clerk.ModLocalFolder, ref included, excluded);
             if (change == null)
-                return clerk.LastError; 
+                return clerk.LastError;
 
             if (!clerk.SetCookInfo(included, excluded))
                 return clerk.LastError;
@@ -56,9 +59,7 @@ namespace Tot.Commands
             if (!clerk.CopyAndFilter(Verbose))
                 return clerk.LastError;
 
-            return CommandCode.Success($"{clerk.ModName} cooked successfuly.. !");        
+            return CommandCode.Success($"{clerk.ModName} cooked successfuly.. !");
         }
-
-
     }
 }
