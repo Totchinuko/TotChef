@@ -300,6 +300,12 @@ namespace Tot
             Console.ResetColor();
         }
 
+        public bool FileContain(FileInfo file, string content)
+        {
+            if (!file.Exists) return false;
+            return File.ReadAllText(file.FullName).Contains(content);
+        }
+
         public void GetCookInfo(out List<string> included, out List<string> excluded)
         {
             included = new List<string>();
