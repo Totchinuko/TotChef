@@ -84,6 +84,8 @@ namespace Tot
 
         public DirectoryInfo ModsFolder => new DirectoryInfo(Path.Join(DevKitContent.FullName, "Mods")).GetProperCasedDirectoryInfo();
 
+        public DirectoryInfo ModSharedFolder => new DirectoryInfo(Path.Join(ModFolder.FullName, "Shared")).GetProperCasedDirectoryInfo();
+
         public DirectoryInfo ModsShared => new DirectoryInfo(Path.Join(DevKitContent.FullName, "ModsShared")).GetProperCasedDirectoryInfo();
 
         public DirectoryInfo PakFiles => new DirectoryInfo(Path.Join(TempFolder.FullName, "Saved/Mods/ModFiles")).GetProperCasedDirectoryInfo();
@@ -184,6 +186,8 @@ namespace Tot
                     converted = Path.Join("Mods", ModName, file.RemoveRootFolder(ModLocalFolder)).PosixFullName().RemoveExtension();
                 else if (file.StartsWith(ModContentFolder.PosixFullName()))
                     converted = file.RemoveRootFolder(ModContentFolder).PosixFullName().RemoveExtension();
+                else if (file.StartsWith(ModSharedFolder.PosixFullName()))
+                    converted = Path.Join("ModsShared", file.RemoveRootFolder(ModSharedFolder)).PosixFullName().RemoveExtension();
                 else if (file.StartsWith(ModsShared.PosixFullName()))
                     converted = Path.Join("ModsShared", file.RemoveRootFolder(ModsShared)).PosixFullName().RemoveExtension();
 
