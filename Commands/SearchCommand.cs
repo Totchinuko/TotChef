@@ -27,8 +27,17 @@ namespace Tot.Commands
             if (string.IsNullOrEmpty(query))
                 return CommandCode.MissingArg(nameof(query));
 
-            FileInfo modlistFile = new FileInfo(path).GetProperCasedFileInfo();
-            List<string> modlist = File.ReadAllLines(modlistFile.FullName).ToList();
+            List<string> modlist;
+            if (File.Exists(path))
+            {
+                FileInfo modlistFile = new FileInfo(path).GetProperCasedFileInfo();
+                modlist = File.ReadAllLines(modlistFile.FullName).ToList();
+            }
+            else if (Directory.Exists(path))
+            {
+                modlist = Directory.GetFiles(path, "*.pak", SearchOption.AllDirectories).ToList();
+            }
+            else return CommandCode.MissingArg(nameof(path));
 
             List<PakListing> listings = new List<PakListing>();
             foreach (string line in modlist)
