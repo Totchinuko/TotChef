@@ -382,7 +382,7 @@ namespace Tot
             p.StartInfo.FileName = UnrealPak.FullName;
             p.StartInfo.Arguments = string.Join(" ", new string[]
             {
-                    file.FullName,
+                    $"\"{file.FullName}\"",
                     "-List"
                 });
             p.Start();
