@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.ConstrainedExecution;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Tot
@@ -337,6 +338,42 @@ namespace Tot
             return null;
         }
 
+        public bool GetModInfos(out ModinfoData data)
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNameCaseInsensitive = true,
+            };
+            try
+            {
+                string json = File.ReadAllText(ModInfo.FullName);
+                data = JsonSerializer.Deserialize<ModinfoData>(json, options) ?? new ModinfoData();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                lastError = CommandCode.Exception(ex);
+                data = new ModinfoData();
+                return false;
+            }
+        }
+
+        public bool GetTemporaryFile(string name, out string path)
+        {
+            path = string.Empty;
+            FileInfo file = new FileInfo(Path.Join(Path.GetTempPath(), "TotChef", name));
+            if (file.Directory == null)
+            {
+                lastError = CommandCode.Error("Invalid temp folder");
+                return false;
+            }
+            Directory.CreateDirectory(file.Directory.FullName);
+            if (!file.Exists)
+                File.WriteAllText(file.FullName, string.Empty);
+            path = file.FullName;
+            return true;
+        }
+
         public bool HasDedicatedModsSharedBranch()
         {
             if (Repository.IsValid(ModsShared.FullName))
@@ -418,6 +455,25 @@ namespace Tot
             catch (Exception ex)
             {
                 lastError = new CommandCode { code = CommandCode.UnknownError, message = ex.Message };
+                return false;
+            }
+        }
+
+        public bool SetModInfos(ModinfoData data)
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNameCaseInsensitive = true,
+            };
+            try
+            {
+                string json = JsonSerializer.Serialize(data, options);
+                File.WriteAllText(ModInfo.FullName, json);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                lastError = CommandCode.Exception(ex);
                 return false;
             }
         }
