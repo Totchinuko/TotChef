@@ -30,8 +30,8 @@ namespace Tot.Commands
                 if (!File.Exists(path))
                     return CommandCode.Error("File not found: " + path);
                 string description = File.ReadAllText(path);
-                description = description.Replace("\"", "\\\"");
-                description = description.Replace("\n", "\\n");
+                //description = description.Replace("\"", "\\\"");
+                //description = description.Replace("\n", "\\n");
 
                 modinfo.Description = description;
                 if (!clerk.SetModInfos(modinfo))
@@ -42,8 +42,8 @@ namespace Tot.Commands
                 if (!File.Exists(path))
                     return CommandCode.Error("File not found: " + path);
                 string description = modinfo.Description;
-                description = description.Replace("\\\"", "\"");
-                description = description.Replace("\\n", "\n");
+                //description = description.Replace("\\\"", "\"");
+                //description = description.Replace("\\n", "\n");
                 File.WriteAllText(path, description);
 
                 using (Process fileOpener = new Process())
