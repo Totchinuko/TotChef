@@ -26,7 +26,7 @@ namespace Tot
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.FileName = clerk.UE4CMD.FullName;
             process.StartInfo.Arguments = string.Join(" ",
-                    clerk.UProject.FullName,
+                    "\"" + clerk.UProject.FullName + "\"",
             string.Join(" ", clerk.CookArgs),
                     KitchenClerk.CookLogArg + "=" + clerk.CookLogFile.FullName
                 );
