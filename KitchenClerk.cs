@@ -134,11 +134,7 @@ namespace Tot
             branchName = "master";
             if (!Repository.IsValid(ModsShared.FullName))
                 return true;
-            if (IsGitRepoDirty(ModsShared))
-            {
-                lastError = new CommandCode { code = CommandCode.RepositoryIsDirty, message = $"Shared repository is dirty" };
-                return false;
-            }
+
 
             using (Repository repo = new Repository(ModsShared.FullName))
             {
@@ -155,6 +151,13 @@ namespace Tot
                     branchName = branch.FriendlyName;
                     if (repo.Head.CanonicalName == branch.CanonicalName)
                         return true;
+
+                    if (IsGitRepoDirty(ModsShared))
+                    {
+                        lastError = new CommandCode { code = CommandCode.RepositoryIsDirty, message = $"Shared repository is dirty" };
+                        return false;
+                    }
+
                     LibGit2Sharp.Commands.Checkout(repo, branch);
                     return true;
                 }
