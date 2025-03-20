@@ -53,7 +53,7 @@ namespace Tot
 
         internal static string? GetConfigPath()
         {
-            string? configPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string? configPath = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
             if (string.IsNullOrEmpty(configPath))
                 return null;
             configPath = Path.Combine(configPath, ConfigFileName);
