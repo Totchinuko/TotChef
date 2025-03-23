@@ -597,7 +597,7 @@ namespace Tot
             }
         }
 
-        public bool SetModInfos(ModinfoData data)
+        public bool SetModInfos(ModinfoData data, string? commit = null)
         {
             JsonSerializerOptions options = new JsonSerializerOptions()
             {
@@ -608,6 +608,8 @@ namespace Tot
             {
                 string json = JsonSerializer.Serialize(data, options);
                 File.WriteAllText(ModInfo.FullName, json);
+                if(commit is not null)
+                    CommitFile(ModFolder, ModInfo, commit);
                 return true;
             }
             catch (Exception ex)

@@ -11,8 +11,6 @@ namespace Tot.Commands
     [Verb("description", HelpText = "Edit the mod description")]
     internal class DescriptionCommand : ModBasedCommand, ICommand
     {
-        [Option('w', "write")]
-        public bool write { get; set; } = false;
 
         public CommandCode Execute()
         {
@@ -24,37 +22,53 @@ namespace Tot.Commands
 
             if (!clerk.GetTemporaryFile(clerk.ModName + ".txt", out string path))
                 return clerk.LastError;
+            
+            if (!File.Exists(path))
+                return CommandCode.Error("File not found: " + path);
+            string description = modinfo.Description;
+            File.WriteAllText(path, description);
 
-            if (write)
+            using (Process fileOpener = new Process())
             {
-                if (!File.Exists(path))
-                    return CommandCode.Error("File not found: " + path);
-                string description = File.ReadAllText(path);
-                //description = description.Replace("\"", "\\\"");
-                //description = description.Replace("\n", "\\n");
-
-                modinfo.Description = description;
-                if (!clerk.SetModInfos(modinfo))
-                    return clerk.LastError;
+                fileOpener.StartInfo.FileName = "nano";
+                fileOpener.StartInfo.Arguments = $"\"{path}\"";
+                fileOpener.StartInfo.UseShellExecute = false;
+                fileOpener.Start();
+                fileOpener.WaitForExit();
             }
-            else
-            {
-                if (!File.Exists(path))
-                    return CommandCode.Error("File not found: " + path);
-                string description = modinfo.Description;
-                //description = description.Replace("\\\"", "\"");
-                //description = description.Replace("\\n", "\n");
-                File.WriteAllText(path, description);
+            
+            if (!File.Exists(path))
+                return CommandCode.Error("File not found: " + path);
+            description = File.ReadAllText(path);
 
-                using (Process fileOpener = new Process())
-                {
-                    fileOpener.StartInfo.FileName = "explorer";
-                    fileOpener.StartInfo.Arguments = $"\"{path}\"";
-                    fileOpener.Start();
-                }
-            }
+            description = description.Trim();
+            if(modinfo.Description == description)
+                return CommandCode.Success();
+            modinfo.Description = description;
+            Tools.WriteColoredLine($"Commiting changes", ConsoleColor.Cyan);
+            if (!clerk.SetModInfos(modinfo, "Update mod description"))
+                return clerk.LastError;
 
             return CommandCode.Success();
+        }
+
+        public void WaitForFile(string path)
+        {
+            FileStream? file = null;
+            while (true)
+            {
+                try
+                {
+                    file = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                }
+                catch (IOException)
+                {
+                    if(file is not null) file.Dispose();   
+                    Thread.Sleep(500);
+                    continue;
+                }
+                break;
+            }
         }
     }
 }
