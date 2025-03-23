@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using CommandLine;
 using LibGit2Sharp;
 
 namespace Tot.Commands;

@@ -1,5 +1,4 @@
-﻿using CommandLine;
-using LibGit2Sharp;
+﻿using LibGit2Sharp;
 using System.ComponentModel;
 using System.ComponentModel.Design;
 using System.Diagnostics;
@@ -14,18 +13,6 @@ namespace Tot
         {
             var types = Assembly.GetExecutingAssembly().GetTypes();
             Type[] commands = types.Where(x => x.GetInterfaces().Contains(typeof(ICommand))).ToArray();
-            Parser.Default.ParseArguments(args, commands)
-                .WithParsed(Run)
-                .WithNotParsed(HandleErrors);
-        }
-
-        private static void HandleErrors(IEnumerable<Error> enumerable)
-        {
-#if DEBUG
-            foreach (var error in enumerable)
-                Tools.WriteColoredLine(error.ToString() ?? "Unknown Error", ConsoleColor.Red);
-#endif
-            Environment.Exit(CommandCode.MissingArgument);
         }
 
         private static void Run(object obj)

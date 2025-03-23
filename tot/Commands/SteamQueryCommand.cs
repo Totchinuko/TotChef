@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using CommandLine;
 
 namespace Tot.Commands
 {
