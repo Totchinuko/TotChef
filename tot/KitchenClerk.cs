@@ -49,7 +49,9 @@ namespace Tot
 
         public DirectoryInfo CookedFiles => new DirectoryInfo(Path.Join(TempFolder.FullName, "Saved/Mods/CookedMods")).GetProperCasedDirectoryInfo();
 
-        public DirectoryInfo CookingFolder => new DirectoryInfo(Path.Join(DevKit.FullName, "Games/ConanSandbox/Saved/EditorCooked/WindowsNoEditor/ConanSandbox/Content")).GetProperCasedDirectoryInfo();
+        public DirectoryInfo EditorSavedFolder => new DirectoryInfo(Path.Join(DevKit.FullName, "Games/ConanSandbox/Saved")).GetProperCasedDirectoryInfo();
+        
+        public DirectoryInfo CookingFolder => new DirectoryInfo(Path.Join(EditorSavedFolder.FullName, "EditorCooked/WindowsNoEditor/ConanSandbox/Content")).GetProperCasedDirectoryInfo();
 
         public FileInfo CookLogFile => new FileInfo(Path.Join(LogFiles.FullName, ModName + ".txt")).GetProperCasedFileInfo();
 
@@ -181,6 +183,18 @@ namespace Tot
                 foreach (FileInfo fileInfo in ModCookedFolder.GetFiles())
                     fileInfo.Delete();
                 foreach (DirectoryInfo directory in ModCookedFolder.GetDirectories())
+                    directory.Delete(true);
+            }
+        }
+
+        public void CleanCookingFolder()
+        {
+            if (EditorSavedFolder.Exists && (EditorSavedFolder.GetFiles().Length != 0 ||
+                                             EditorSavedFolder.GetDirectories().Length != 0))
+            {
+                foreach (FileInfo fileInfo in EditorSavedFolder.GetFiles())
+                    fileInfo.Delete();
+                foreach (DirectoryInfo directory in EditorSavedFolder.GetDirectories())
                     directory.Delete(true);
             }
         }

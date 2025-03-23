@@ -47,6 +47,8 @@ namespace Tot.Commands
                 Tools.WriteColoredLine($"Added {change.Count} missing local mod files to cooking", ConsoleColor.Cyan);
             }
 
+            Tools.WriteColoredLine($"Cleaning cook folders from previous operations...", ConsoleColor.Cyan);
+            clerk.CleanCookingFolder();
             Tools.WriteColoredLine($"Cooking {clerk.ModName}...", ConsoleColor.Cyan);
             Stove stove = new Stove(clerk, Verbose);
             stove.StartCooking();
