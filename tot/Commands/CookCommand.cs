@@ -38,14 +38,19 @@ namespace Tot.Commands
             if (change == null)
                 return clerk.LastError;
 
-            if (!clerk.SetCookInfo(included, excluded))
-                return clerk.LastError;
-
             if (change.Count > 0)
             {
+                if (!clerk.SetCookInfo(included, excluded))
+                    return clerk.LastError;
                 clerk.DumpChange(change, ConsoleColor.Yellow);
                 Tools.WriteColoredLine($"Added {change.Count} missing local mod files to cooking", ConsoleColor.Cyan);
             }
+            
+            if(!clerk.AutoBumpBuild())
+                return clerk.LastError;
+            
+            if(!clerk.UpdateModDevKitVersion())
+                return clerk.LastError;
 
             Tools.WriteColoredLine($"Cleaning cook folders from previous operations...", ConsoleColor.Cyan);
             clerk.CleanCookingFolder();

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Tot
@@ -103,6 +104,8 @@ namespace Tot
         public FileInfo UE4CMD => new FileInfo(Path.Join(DevKit.FullName, CMDBinary)).GetProperCasedFileInfo();
 
         public FileInfo UE4Editor => new FileInfo(Path.Join(DevKit.FullName, "Engine/Binaries/Win64/UE4Editor.exe")).GetProperCasedFileInfo();
+        
+        public FileInfo DevKitVersion => new FileInfo(Path.Join(DevKit.FullName, "version.txt")).GetProperCasedFileInfo();
 
         public FileInfo UnrealPak => new FileInfo(Path.Join(DevKit.FullName, "Engine/Binaries/Win64/UnrealPak.exe")).GetProperCasedFileInfo();
 
@@ -380,6 +383,37 @@ namespace Tot
             }
         }
 
+        public bool UpdateModDevKitVersion()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNameCaseInsensitive = true,
+                WriteIndented = true
+            };
+            try
+            {
+                if (IsGitRepoDirty(ModFolder))
+                    throw new InvalidOperationException("Mod repository is dirty");
+                string json = File.ReadAllText(ModInfo.FullName);
+                var data = JsonSerializer.Deserialize<ModinfoData>(json, options) ?? new ModinfoData();
+                GetDevKitVersion(out var revision, out var snapshot);
+                if (data.RevisionNumber == revision && data.SnapshotId == snapshot) 
+                    return true;
+                data.RevisionNumber = revision;
+                data.SnapshotId = snapshot;
+                json = JsonSerializer.Serialize(data, options);
+                File.WriteAllText(ModInfo.FullName, json);
+                CommitFile(ModFolder, ModInfo, $"Bump DevKit version to {revision}.{snapshot}");
+            }
+            catch (Exception ex)
+            {
+                lastError = CommandCode.Exception(ex);
+                return false;
+            }
+
+            return true;
+        }
+
         public bool GetTemporaryFile(string name, out string path)
         {
             path = string.Empty;
@@ -417,6 +451,63 @@ namespace Tot
                     return repo.RetrieveStatus().IsDirty;
                 }
             return false;
+        }
+
+        public void CommitFile(DirectoryInfo directory, FileInfo file, string message)
+        {
+            if(!Repository.IsValid(directory.FullName))
+                throw new Exception("Invalid repository");
+
+            using Repository repo = new Repository(directory.FullName);
+            var status = repo.RetrieveStatus(new StatusOptions());
+            if (status.Staged.Any())
+                throw new Exception("Repository is dirty");
+            repo.Index.Add(file.Name);
+            repo.Index.Write();
+            Signature author = new Signature(config.GitAuthorName, config.GitAuthorEmail, DateTime.Now);
+            repo.Commit(message, author, author);
+        }
+
+        public bool AutoBumpBuild()
+        {
+            if (!config.AutoBumpBuild) return true;
+            
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNameCaseInsensitive = true,
+                WriteIndented = true
+            };
+            try
+            {
+                if (IsGitRepoDirty(ModFolder))
+                    throw new InvalidOperationException("Mod repository is dirty");
+                string json = File.ReadAllText(ModInfo.FullName);
+                var data = JsonSerializer.Deserialize<ModinfoData>(json, options) ?? new ModinfoData();
+                data.VersionBuild += 1;
+                json = JsonSerializer.Serialize(data, options);
+                File.WriteAllText(ModInfo.FullName, json);
+                CommitFile(ModFolder, ModInfo, $"Bump to {data.VersionMajor}.{data.VersionMinor}.{data.VersionBuild}");
+            }
+            catch (Exception ex)
+            {
+                lastError = CommandCode.Exception(ex);
+                return false;
+            }
+
+            return true;
+        }
+
+        public void GetDevKitVersion(out int revisionNumber, out int snapshotId)
+        {
+            if(!DevKitVersion.Exists)
+                throw new FileNotFoundException("Version not found");
+            var content = File.ReadAllText(DevKitVersion.FullName);
+            Regex regex = new Regex(@"([0-9]+)\.([0-9]+)");
+            var result = regex.Match(content);
+            if(!result.Success)
+                throw new InvalidOperationException("Version is invalid");
+            revisionNumber = int.Parse(result.Groups[1].Value);
+            snapshotId = int.Parse(result.Groups[2].Value);
         }
 
         public bool IsModsSharedBranchValid()
@@ -472,6 +563,7 @@ namespace Tot
             try
             {
                 File.WriteAllText(ModCookInfo.FullName, sb.ToString());
+                CommitFile(ModFolder, ModCookInfo, $"Update mod cookinfos");
                 return true;
             }
             catch (Exception ex)
@@ -486,6 +578,7 @@ namespace Tot
             JsonSerializerOptions options = new JsonSerializerOptions()
             {
                 PropertyNameCaseInsensitive = true,
+                WriteIndented = true,
             };
             try
             {
