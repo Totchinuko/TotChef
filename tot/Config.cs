@@ -14,6 +14,13 @@ namespace Tot
     internal class Config
     {
         public string DevKitPath { get; set; }
+        
+        public bool AutoBumpBuild { get; set; }
+
+        public string GitAuthorName { get; set; } = "Tot Chef";
+        
+        public string GitAuthorEmail { get; set; } = "no@email.com";
+        
         [JsonIgnore]
         public bool IsValid => !string.IsNullOrEmpty(DevKitPath);
 
