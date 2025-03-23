@@ -25,6 +25,9 @@ namespace Tot
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.FileName = clerk.UE4CMD.FullName;
+            process.StartInfo.WorkingDirectory = clerk.DevKit.FullName;
+            process.StartInfo.EnvironmentVariables["=C:"] = "C:\\";
+            process.StartInfo.EnvironmentVariables[KitchenClerk.GraniteSDKEnvKey] = clerk.GraniteSDKDir.FullName;
             process.StartInfo.Arguments = string.Join(" ",
                     "\"" + clerk.UProject.FullName + "\"",
             string.Join(" ", clerk.CookArgs),

@@ -17,7 +17,9 @@ namespace Tot
         public const string AssetExt = "uasset";
 
         public const string CMDBinary = "Engine/Binaries/Win64/UE4Editor-Cmd.exe";
-
+        
+        public const string GraniteSDKEnvKey = "GRANITESDK_PATH";
+        
         public const string CookInfoHeader = "[/CookInfo]";
 
         public const string CookLogArg = "-abslog";
@@ -54,6 +56,9 @@ namespace Tot
         public DirectoryInfo DevKit => new DirectoryInfo(config.DevKitPath).GetProperCasedDirectoryInfo();
 
         public DirectoryInfo DevKitContent => new DirectoryInfo(Path.Join(DevKit.FullName, "Games/ConanSandbox/Content")).GetProperCasedDirectoryInfo();
+
+        public DirectoryInfo GraniteSDKDir =>
+            new DirectoryInfo(Path.Join(DevKit.FullName, "Engine/Source/ThirdParty/GraniteSDK"));
 
         public bool IsValidDevKit => !string.IsNullOrEmpty(config?.DevKitPath) && UE4CMD.Exists;
 

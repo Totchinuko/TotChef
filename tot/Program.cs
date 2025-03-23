@@ -12,7 +12,8 @@ namespace Tot
     {
         static void Main(string[] args)
         {
-            Type[] commands = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.GetInterfaces().Contains(typeof(ICommand))).ToArray();
+            var types = Assembly.GetExecutingAssembly().GetTypes();
+            Type[] commands = types.Where(x => x.GetInterfaces().Contains(typeof(ICommand))).ToArray();
             Parser.Default.ParseArguments(args, commands)
                 .WithParsed(Run)
                 .WithNotParsed(HandleErrors);
