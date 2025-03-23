@@ -496,6 +496,30 @@ namespace Tot
 
             return true;
         }
+        
+        public bool UpdateModVersion()
+        {
+            if (!config.AutoBumpBuild) return true;
+            
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNameCaseInsensitive = true,
+                WriteIndented = true
+            };
+            try
+            {
+                string json = File.ReadAllText(ModInfo.FullName);
+                var data = JsonSerializer.Deserialize<ModinfoData>(json, options) ?? new ModinfoData();
+                CommitFile(ModFolder, ModInfo, $"Bump to {data.VersionMajor}.{data.VersionMinor}.{data.VersionBuild}");
+            }
+            catch (Exception ex)
+            {
+                lastError = CommandCode.Exception(ex);
+                return false;
+            }
+
+            return true;
+        }
 
         public void GetDevKitVersion(out int revisionNumber, out int snapshotId)
         {

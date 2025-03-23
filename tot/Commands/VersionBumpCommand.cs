@@ -11,17 +11,8 @@ namespace Tot.Commands
     [Verb("bump", HelpText = "Bump a mod version")]
     internal class VersionBumpCommand : ModBasedCommand, ICommand
     {
-        [Option('f', "feature")]
-        public bool major { get; set; }
-
-        [Value(0, HelpText = "Numeric modifier (+1/-1)", Required = true)]
-        public int modifier { get; set; }
-
-        [Option('b', "build")]
-        public bool patch { get; set; }
-
-        [Option('v', "version")]
-        public bool version { get; set; }
+        [Value(0, HelpText = "Part of the version to bump (major.minor.build)", Required = true)]
+        public string Part { get; set; } = string.Empty;
 
         public CommandCode Execute()
         {
@@ -31,15 +22,23 @@ namespace Tot.Commands
             if (!clerk.GetModInfos(out ModinfoData modinfo))
                 return clerk.LastError;
 
-            if (!major && !version && !patch)
-                return CommandCode.Error("Need at least one version flag");
-
-            if (version)
-                modinfo.VersionMajor += modifier;
-            if (major)
-                modinfo.VersionMinor += modifier;
-            if (patch)
-                modinfo.VersionBuild += modifier;
+            switch (Part)
+            {
+                case "major":
+                    modinfo.VersionMajor++;
+                    modinfo.VersionMinor = 0;
+                    modinfo.VersionBuild = 0;
+                    break;
+                case "minor":
+                    modinfo.VersionMinor++;
+                    modinfo.VersionBuild = 0;
+                    break;
+                case "build":
+                    modinfo.VersionBuild++;
+                    break;
+                default:
+                    return CommandCode.MissingArg("Part");
+            }
 
             Regex regex = new Regex(@"([0-9]+)\.([0-9]+)\.([0-9]+)");
             modinfo.Name = regex.Replace(modinfo.Name, $"{modinfo.VersionMajor}.{modinfo.VersionMinor}.{modinfo.VersionBuild}");
@@ -47,6 +46,9 @@ namespace Tot.Commands
             Tools.WriteColoredLine(modinfo.Name, ConsoleColor.Cyan);
 
             if (!clerk.SetModInfos(modinfo))
+                return clerk.LastError;
+            
+            if(!clerk.UpdateModVersion())
                 return clerk.LastError;
 
             return CommandCode.Success();
