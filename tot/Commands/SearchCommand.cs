@@ -1,72 +1,76 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class SearchCommand : Command<SearchCommandOptions, SearchCommandHandler>
 {
-    [Verb("search", HelpText = "Process a mod list to highlight common files")]
-    internal class SearchCommand : ICommand
+    public SearchCommand() : base("search", "Process a mod list to highlight common files")
     {
-        [Value(0, HelpText = "Path to the mod list", Required = true)]
-        public string? path { get; set; }
+        var opt = new Argument<string>("mod-list", "Path to the mod list");
+        AddArgument(opt);
+        opt = new Argument<string>("search-pattern", "File name pattern to look for");
+        AddArgument(opt);
+    }
+}
 
-        [Value(1, HelpText = "Search file name", Required = true)]
-        public string? query { get; set; }
+public class SearchCommandOptions : ICommandOptions
+{
+    public string ModList { get; set; } = string.Empty;
+    public string SearchPattern { get; set; } = string.Empty;
+}
 
-        public CommandCode Execute()
+public class SearchCommandHandler(IConsole console, KitchenClerk clerk) : ICommandOptionsHandler<SearchCommandOptions>
+{
+    public async Task<int> HandleAsync(SearchCommandOptions options, CancellationToken cancellationToken)
+    {
+        try
         {
-            if (!KitchenClerk.CreateDevKitClerk(out KitchenClerk clerk))
-                return clerk.LastError;
-
-            if (string.IsNullOrEmpty(path))
-                return CommandCode.MissingArg(nameof(path));
-
-            if (string.IsNullOrEmpty(query))
-                return CommandCode.MissingArg(nameof(query));
-
             List<string> modlist;
-            if (File.Exists(path))
+            if (File.Exists(options.ModList))
             {
-                FileInfo modlistFile = new FileInfo(path).GetProperCasedFileInfo();
-                modlist = File.ReadAllLines(modlistFile.FullName).ToList();
+                var modlistFile = new FileInfo(options.ModList).GetProperCasedFileInfo();
+                modlist = (await File.ReadAllLinesAsync(modlistFile.FullName, cancellationToken)).ToList();
             }
-            else if (Directory.Exists(path))
+            else if (Directory.Exists(options.ModList))
             {
-                modlist = Directory.GetFiles(path, "*.pak", SearchOption.AllDirectories).ToList();
+                modlist = Directory.GetFiles(options.ModList, "*.pak", SearchOption.AllDirectories).ToList();
             }
-            else return CommandCode.MissingArg(nameof(path));
+            else
+            {
+                throw new CommandException("Invalid mod list");
+            }
 
-            List<PakListing> listings = new List<PakListing>();
-            foreach (string line in modlist)
+            List<PakListing> listings = [];
+            foreach (var line in modlist)
             {
-                string path = line;
+                var path = line;
                 if (path.StartsWith("*"))
                     path = path.Substring(1);
-                FileInfo mod = new FileInfo(path);
+                var mod = new FileInfo(path);
                 if (mod.Exists)
                 {
-                    Tools.WriteColoredLine($"Parsing {mod.FullName}...", ConsoleColor.Cyan);
-                    if (clerk.QueryPakFile(mod, out string output))
-                        listings.Add(new PakListing(output, mod.Name));
-                    else
-                        return clerk.LastError;
+                    console.WriteLine($"Parsing:{mod.FullName}");
+                    var pakList = await clerk.QueryPakFile(mod);
+                    listings.Add(new PakListing(pakList, mod.Name));
                 }
                 else
-                    Tools.WriteColoredLine($"Not Found: {mod.FullName}", ConsoleColor.DarkGray);
-            }
-
-            foreach (PakListing listing in listings)
-            {
-                foreach (PakedFile pakedFile in listing.pakedFiles)
                 {
-                    if (pakedFile.path.Contains(query))
-                        Tools.WriteColoredLine(listing.pakName, ConsoleColor.DarkGray);
+                    console.WriteLine($"Not Found:{mod.FullName}");
                 }
             }
 
-            return CommandCode.Success();
+            foreach (var listing in listings)
+            foreach (var pakedFile in listing.pakedFiles)
+                if (pakedFile.path.Contains(options.SearchPattern))
+                    console.WriteLine(listing.pakName);
         }
+        catch (CommandException ex)
+        {
+            return await console.OutputCommandError(ex);
+        }
+
+        return 0;
     }
 }

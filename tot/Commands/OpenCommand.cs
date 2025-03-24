@@ -1,22 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class OpenCommand : ModBasedCommand<OpenCommandOption, OpenCommandHandler>
 {
-    [Verb("open", HelpText = "Open the folder containing the pak files")]
-    internal class OpenCommand : ModBasedCommand, ICommand
+    public OpenCommand() : base("open", "Open the folder containing the pak files")
     {
-        public CommandCode Execute()
-        {
-            if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                return clerk.LastError;
+    }
+}
 
-            Process.Start("explorer.exe", clerk.ModPakFolder.FullName);
-            return CommandCode.Success();
-        }
+public class OpenCommandOption : ModBasedCommandOptions
+{
+}
+
+public class OpenCommandHandler(KitchenFiles kitchenFiles) : ModBasedCommandHandler<OpenCommandOption>(kitchenFiles)
+{
+    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
+
+    public override async Task<int> HandleAsync(OpenCommandOption options, CancellationToken cancellationToken)
+    {
+        await base.HandleAsync(options, cancellationToken);
+        Process.Start("explorer.exe", _kitchenFiles.ModPakFolder.FullName);
+        return 0;
     }
 }

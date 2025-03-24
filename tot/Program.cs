@@ -1,31 +1,28 @@
-﻿using LibGit2Sharp;
-using System.ComponentModel;
-using System.ComponentModel.Design;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
+﻿using System.CommandLine.Builder;
+using System.CommandLine.Parsing;
+using Microsoft.Extensions.DependencyInjection;
+using tot_lib;
+using Tot.Commands;
+using tot.Services;
 
-namespace Tot
+namespace Tot;
+
+internal class Program
 {
-    internal class Program
+    private static int Main(string[] args)
     {
-        static void Main(string[] args)
+        var builder = new CommandLineBuilder().UseDefaults().UseDependencyInjection(services =>
         {
-            var types = Assembly.GetExecutingAssembly().GetTypes();
-            Type[] commands = types.Where(x => x.GetInterfaces().Contains(typeof(ICommand))).ToArray();
-        }
+            services.AddSingleton(Config.LoadConfig());
+            services.AddSingleton<GitHandler>();
+            services.AddSingleton<KitchenFiles>();
+            services.AddSingleton<KitchenClerk>();
 
-        private static void Run(object obj)
-        {
-            CommandCode code;
-            if (obj is ICommand)
-                code = ((ICommand)obj).Execute();
-            else
-                code = CommandCode.Unknown();
+            services.AddTransient<CheckoutCommand>();
+            services.AddTransient<CleanCommand>();
+            services.AddTransient<ConfigCommand>();
+        });
 
-            if(!string.IsNullOrEmpty(code.message))
-                Tools.WriteColoredLine(code.message, code.code == 0 ? ConsoleColor.Cyan : ConsoleColor.Red);
-            Environment.Exit(code.code);
-        }
+        return builder.Build().Invoke(args);
     }
 }

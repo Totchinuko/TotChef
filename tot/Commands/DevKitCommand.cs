@@ -1,30 +1,46 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.CommandLine;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class DevKitCommand : ModBasedCommand<DevKitCommandOptions, DevKitCommandHandler>
 {
-    [Verb("devkit", HelpText = "Open the devkit for the targeted mod")]
-    internal class DevKitCommand : ModBasedCommand, ICommand
+    public DevKitCommand() : base("devkit", "Open the devkit for the targeted mod")
     {
-        public CommandCode Execute()
+    }
+}
+
+public class DevKitCommandOptions : ModBasedCommandOptions
+{
+}
+
+public class DevKitCommandHandler(IConsole console, KitchenFiles kitchenFiles, GitHandler git)
+    : ModBasedCommandHandler<DevKitCommandOptions>(kitchenFiles)
+{
+    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
+
+    public override async Task<int> HandleAsync(DevKitCommandOptions options, CancellationToken cancellationToken)
+    {
+        await base.HandleAsync(options, cancellationToken);
+
+        try
         {
-            if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                return clerk.LastError;
+            git.CheckoutModsSharedBranch(out var branch);
+            console.WriteLine($"{branch} branch is now active on Shared repository");
+            _kitchenFiles.DeleteAnyActive();
+            _kitchenFiles.CreateActive();
+            console.WriteLine($"Set {_kitchenFiles.ModName} as active");
 
-            if(!clerk.CheckoutModsSharedBranch(out string branch))
-                return clerk.LastError;
-            Tools.WriteColoredLine($"{branch} branch is now active on Shared repository", ConsoleColor.Cyan);
-
-            if(!clerk.SwitchActive())
-                return clerk.LastError;
-            Tools.WriteColoredLine($"Set {clerk.ModName} as active", ConsoleColor.Cyan);
-            Process.Start(clerk.UE4Editor.FullName, string.Join(" ", clerk.UProject.FullName, string.Join(" ", clerk.EditorArgs)));
-
-            return CommandCode.Success();
+            Process.Start(_kitchenFiles.Ue4Editor.FullName,
+                string.Join(" ", _kitchenFiles.UProject.FullName, string.Join(" ", Constants.EditorArgs)));
         }
+        catch (CommandException ex)
+        {
+            return await console.OutputCommandError(ex);
+        }
+
+        return 0;
     }
 }

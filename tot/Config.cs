@@ -1,70 +1,128 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Text.Json;
-using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using Tot;
+using tot_lib;
 
-namespace Tot
+namespace Tot;
+
+[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[JsonSerializable(typeof(Config))]
+public partial class ConfigJsonContext : JsonSerializerContext
 {
-    internal class Config
+}
+
+public class Config
+{
+    private const string ConfigFileName = "Tot.json";
+
+    public Config()
     {
-        public string DevKitPath { get; set; }
-        
-        public bool AutoBumpBuild { get; set; }
+        DevKitPath = "";
+    }
 
-        public string GitAuthorName { get; set; } = "Tot Chef";
-        
-        public string GitAuthorEmail { get; set; } = "no@email.com";
-        
-        [JsonIgnore]
-        public bool IsValid => !string.IsNullOrEmpty(DevKitPath);
+    public string DevKitPath { get; set; }
 
-        private const string ConfigFileName = "Tot.json";
+    public bool AutoBumpBuild { get; set; }
 
-        public Config() 
-        { 
-            DevKitPath = "";
-        }
+    public string GitAuthorName { get; set; } = "Tot Chef";
 
-        public static Config LoadConfig()
-        {
-            string configPath = GetConfigPath() ?? "";
-            string json = "";
-            if (File.Exists(configPath))
+    public string GitAuthorEmail { get; set; } = "no@email.com";
+
+    public string DefaultCliEditor { get; set; } = "nano";
+
+    [JsonIgnore] public bool IsValid => !string.IsNullOrEmpty(DevKitPath);
+
+    public static Config LoadConfig()
+    {
+        var configPath = GetConfigPath() ?? "";
+        var json = "";
+        if (File.Exists(configPath))
+            try
             {
-                try
-                {
-                    json = File.ReadAllText(configPath);
-                }
-                catch { }
+                json = File.ReadAllText(configPath);
             }
-            if (string.IsNullOrEmpty(json))
-                return new Config();
+            catch
+            {
+            }
 
-            Config config = JsonSerializer.Deserialize<Config>(json) ?? new Config() { DevKitPath = "" };
-            return config;
-        }
+        if (string.IsNullOrEmpty(json))
+            return new Config();
 
-        public void SaveConfig()
+        var config = JsonSerializer.Deserialize(json, ConfigJsonContext.Default.Config) ??
+                     new Config { DevKitPath = "" };
+        return config;
+    }
+
+    public void SaveConfig()
+    {
+        var option = new JsonSerializerOptions { WriteIndented = true };
+        var json = JsonSerializer.Serialize(this, ConfigJsonContext.Default.Config);
+        var configPath = GetConfigPath() ?? "";
+        File.WriteAllText(configPath, json);
+    }
+
+    internal static string? GetConfigPath()
+    {
+        var configPath = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
+        if (string.IsNullOrEmpty(configPath))
+            return null;
+        configPath = Path.Combine(configPath, ConfigFileName);
+        return configPath;
+    }
+
+    public void SetValue(string key, string value)
+    {
+        switch (key)
         {
-            JsonSerializerOptions option = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(this, option);
-            string? configPath = GetConfigPath() ?? "";
-            File.WriteAllText(configPath, json);
+            case "DevKitPath":
+                DevKitPath = value;
+                break;
+            case "AutoBumpBuild":
+                if (!bool.TryParse(value, out var b))
+                    throw new CommandException(CommandCode.MissingArgument, "Invalid value for AutoBumpBuild");
+                AutoBumpBuild = b;
+                break;
+            case "GitAuthorName":
+                GitAuthorName = value;
+                break;
+            case "GitAuthorEmail":
+                GitAuthorEmail = value;
+                break;
+            case "DefaultCliEditor":
+                DefaultCliEditor = value;
+                break;
+            default:
+                throw new CommandException(CommandCode.MissingArgument, $"Invalid key: {key}");
         }
+    }
 
-        internal static string? GetConfigPath()
+    public IEnumerable<string> GetKeyList()
+    {
+        return
+        [
+            "DevKitPath",
+            "AutoBumpBuild",
+            "GitAuthorName",
+            "GitAuthorEmail",
+            "DefaultCliEditor"
+        ];
+    }
+
+    public string GetValue(string key)
+    {
+        switch (key)
         {
-            string? configPath = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
-            if (string.IsNullOrEmpty(configPath))
-                return null;
-            configPath = Path.Combine(configPath, ConfigFileName);
-            return configPath;
+            case "DevKitPath":
+                return DevKitPath;
+            case "AutoBumpBuild":
+                return AutoBumpBuild.ToString();
+            case "GitAuthorName":
+                return GitAuthorName;
+            case "GitAuthorEmail":
+                return GitAuthorEmail;
+            case "DefaultCliEditor":
+                return DefaultCliEditor;
+            default:
+                throw new CommandException(CommandCode.MissingArgument, $"Invalid key: {key}");
         }
     }
 }

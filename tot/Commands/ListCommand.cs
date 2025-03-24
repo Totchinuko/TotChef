@@ -1,25 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class ListCommand : Command<ListCommandOptions, ListCommandHandler>
 {
-    [Verb("list", HelpText = "List the mods available in the DevKit")]
-    internal class ListCommand : ICommand
+    public ListCommand() : base("list", "List the mods available in the DevKit")
     {
-        public CommandCode Execute()
-        {
-            if(!KitchenClerk.CreateDevKitClerk(out KitchenClerk clerk))
-                return clerk.LastError;
+    }
+}
 
-            Tools.WriteColoredLine("Mod list:", ConsoleColor.Cyan);
-            foreach (DirectoryInfo directory in clerk.ModsFolder.GetDirectories())
-            {
-                Console.WriteLine(directory.Name);
-            }
-            return CommandCode.Success();
-        }
+public class ListCommandOptions : ICommandOptions
+{
+}
+
+public class ListCommandHandler(IConsole console, KitchenFiles kitchenFiles)
+    : ICommandOptionsHandler<ListCommandOptions>
+{
+    public Task<int> HandleAsync(ListCommandOptions options, CancellationToken cancellationToken)
+    {
+        foreach (var directory in kitchenFiles.ModsFolder.GetDirectories())
+            console.WriteLine(directory.Name);
+        return Task.FromResult(0);
     }
 }

@@ -1,77 +1,98 @@
-﻿using CommandLine.Text;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class SwapCommand : ModBasedCommand<SwapCommandOptions, SwapCommandHandler>
 {
-    [Verb("swap", HelpText = "Swap files in the cookinfo.ini")]
-    internal class SwapCommand : ModBasedCommand, ICommand
+    public SwapCommand() : base("swap", "Swap files in the cookinfo.ini")
     {
-        [Option('e', "exclude", HelpText = "Swap files to the exclude list")]
-        public bool exclude { get; set; }
+        var optb = new Option<bool>("--exclude", "Swap files to the exclude list");
+        optb.AddAlias("-e");
+        AddOption(optb);
+        optb = new Option<bool>("--recursive", "Include files from subfolder");
+        optb.AddAlias("-r");
+        AddOption(optb);
+        var opts = new Option<bool>("--search-pattern", "Folder filtering, accept * wildcards on file name");
+        opts.AddAlias("-s");
+        AddOption(opts);
+    }
+}
 
-        [Option('f', "filter", HelpText = "Folder filtering, accept * wildcards on file name")]
-        public string? filter { get; set; }
+public class SwapCommandOptions : ModBasedCommandOptions
+{
+    public bool Exclude { get; set; }
+    public string SearchPattern { get; set; } = string.Empty;
+    public bool Recursive { get; set; }
+}
 
-        [Option('r', "recursive", HelpText = "Include files from subfolder")]
-        public bool recursive { get; set; }
+public class SwapCommandHandler(IConsole console, KitchenFiles kitchenFiles, KitchenClerk clerk)
+    : ModBasedCommandHandler<SwapCommandOptions>(kitchenFiles)
+{
+    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
 
-        public CommandCode Execute()
+    public override async Task<int> HandleAsync(SwapCommandOptions options, CancellationToken cancellationToken)
+    {
+        await base.HandleAsync(options, cancellationToken);
+
+        try
         {
-            if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                return clerk.LastError;
+            var filter = options.SearchPattern;
+            if (!string.IsNullOrEmpty(filter) &&
+                !filter.PosixFullName().StartsWith(_kitchenFiles.DevKitContent.PosixFullName()))
+                filter = Path.Join(_kitchenFiles.DevKitContent.FullName, filter);
 
-            if (filter == null)
-                filter = "";
-
-            if (!string.IsNullOrEmpty(filter) && !filter.PosixFullName().StartsWith(clerk.DevKitContent.PosixFullName()))
-                filter = Path.Join(clerk.DevKitContent.FullName, filter);
-
-            List<string> included;
-            List<string> excluded;
-            clerk.GetCookInfo(out included, out excluded);
-
-            List<string> added = new List<string>();
+            var cookInfo = await clerk.GetCookInfo();
+            List<string> added;
 
             if (File.Exists(filter))
             {
-                if (exclude)
-                    added = clerk.SwapFilesInLists(new List<string> { filter.PosixFullName() }, ref excluded, ref included);
+                if (options.Exclude)
+                    added = clerk.SwapFilesInLists([filter.PosixFullName()], cookInfo.Excluded, cookInfo.Included);
                 else
-                    added = clerk.SwapFilesInLists(new List<string> { filter.PosixFullName() }, ref included, ref excluded);
+                    added = clerk.SwapFilesInLists([filter.PosixFullName()], cookInfo.Included, cookInfo.Excluded);
             }
             else if (Directory.Exists(filter))
             {
-                DirectoryInfo directory = new DirectoryInfo(filter).GetProperCasedDirectoryInfo();
-                List<string> files = Directory.GetFiles(directory.FullName, $"*.{KitchenClerk.AssetExt}", recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).ToList();
+                var directory = new DirectoryInfo(filter).GetProperCasedDirectoryInfo();
+                var files = Directory.GetFiles(directory.FullName, $"*{Constants.UAssetExt}",
+                    options.Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).ToList();
 
-                if (exclude)
-                    added = clerk.SwapFilesInLists(files, ref excluded, ref included);
+                if (options.Exclude)
+                    added = clerk.SwapFilesInLists(files, cookInfo.Excluded, cookInfo.Included);
                 else
-                    added = clerk.SwapFilesInLists(files, ref included, ref excluded);
+                    added = clerk.SwapFilesInLists(files, cookInfo.Included, cookInfo.Excluded);
             }
             else if (filter.Contains("*"))
             {
-                FileInfo fileInfo = new FileInfo(filter);
+                var fileInfo = new FileInfo(filter);
                 if (fileInfo.Directory == null || !fileInfo.Directory.Exists)
-                    return CommandCode.NotFound(fileInfo);
+                    throw CommandCode.NotFound(fileInfo);
+                var files = Directory.GetFiles(fileInfo.Directory.FullName,
+                    filter.Substring(fileInfo.Directory.FullName.Length + 1),
+                    options.Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).ToList();
 
-                List<string> files = Directory.GetFiles(fileInfo.Directory.FullName, filter.Substring(fileInfo.Directory.FullName.Length + 1), recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).ToList();
-                if (exclude)
-                    added = clerk.SwapFilesInLists(files, ref excluded, ref included);
+                if (options.Exclude)
+                    added = clerk.SwapFilesInLists(files, cookInfo.Excluded, cookInfo.Included);
                 else
-                    added = clerk.SwapFilesInLists(files, ref included, ref excluded);
+                    added = clerk.SwapFilesInLists(files, cookInfo.Included, cookInfo.Excluded);
             }
             else
-                return CommandCode.NotFound(new DirectoryInfo(filter));
+            {
+                throw new CommandException($"Invalid filter {filter}");
+            }
 
-            if (!clerk.SetCookInfo(included, excluded))
-                return clerk.LastError;
-            clerk.DumpChange(added, exclude ? ConsoleColor.Red : ConsoleColor.Green);
-            return CommandCode.Success($"{added.Count} files added to the {(exclude ? "exclude" : "include")} list");
+            await clerk.SetCookInfo(cookInfo);
+
+            foreach (var addedFile in added)
+                console.WriteLine(options.Exclude ? "-" : "+" + addedFile);
         }
+        catch (CommandException ex)
+        {
+            return await console.OutputCommandError(ex);
+        }
+
+        return 0;
     }
 }

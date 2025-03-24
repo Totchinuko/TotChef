@@ -1,70 +1,71 @@
-﻿using System.Reflection;
-using LibGit2Sharp;
+﻿using System.CommandLine;
+using tot_lib;
 
 namespace Tot.Commands;
 
-[Verb("config", HelpText = "Modify a config")]
-public class ConfigCommand : ModBasedCommand, ICommand
+public class ConfigCommand : Command<ConfigCommandOptions, ConfigCommandHandler>
 {
-    [Value(0, HelpText = "action to perform (get|set|list)", Required = true)]
-    public string Action { get; set; } = string.Empty;
-    
-    [Value(1, HelpText = "Key of the config to interact with")]
-    public string Key { get; set; } = string.Empty;
-    
-    [Value(1, HelpText = "Value of the config to interact with")]
-    public string Value { get; set; } = string.Empty;
-    
-    public CommandCode Execute()
+    public ConfigCommand() : base("config", "Modify a config")
     {
-        if (string.IsNullOrEmpty(Action))
-            return CommandCode.MissingArg("action");
-        
+        var arg = new Argument<string>("action", "action to perform (get|set|list)");
+        AddArgument(arg);
+        arg = new Argument<string>("key", "Key of the config to interact with");
+        AddArgument(arg);
+        arg = new Argument<string>("value", "Value of the config to interact with");
+        arg.SetDefaultValue("");
+        AddArgument(arg);
+    }
+}
+
+public class ConfigCommandOptions : ICommandOptions
+{
+    public string Action { get; set; } = string.Empty;
+    public string Key { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
+}
+
+public class ConfigCommandHandler(IConsole console) : ICommandOptionsHandler<ConfigCommandOptions>
+{
+    public async Task<int> HandleAsync(ConfigCommandOptions options, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(options.Action))
+            return await console.OutputCommandError(CommandCode.MissingArg("action"));
+
         var config = Config.LoadConfig();
-        switch (Action)
+        switch (options.Action)
         {
             case "get":
-                return GetAction(config);
+                return await GetAction(config, options);
             case "set":
-                return SetAction(config);
+                return await SetAction(config, options);
             case "list":
-                return ListAction(config);
+                return await ListAction(config, options);
             default:
-                return CommandCode.MissingArg("action");
+                return await console.OutputCommandError(CommandCode.MissingArg("action"));
         }
     }
 
-    private CommandCode ListAction(Config config)
+    private Task<int> ListAction(Config config, ConfigCommandOptions options)
     {
-        Tools.WriteColoredLine("Config List:", ConsoleColor.White);
-        foreach (var prop in config.GetType().GetProperties())
-        {
-            if(prop.GetSetMethod() is null) continue;
-            Tools.WriteColoredLine($"{prop.Name}={prop.GetValue(config)?.ToString() ?? "NULL"}", ConsoleColor.White);
-        }
-        return CommandCode.Success();
+        console.WriteLine("Listing all configs");
+        foreach (var prop in config.GetKeyList()) console.WriteLine($"{prop}={config.GetValue(prop)}");
+        return Task.FromResult(0);
     }
 
-    private CommandCode SetAction(Config config)
+    private Task<int> SetAction(Config config, ConfigCommandOptions options)
     {
-        if(string.IsNullOrEmpty(Key))
-            return CommandCode.MissingArg("key");
-        var prop = config.GetType().GetProperty(Key);
-        if(prop is null || prop.GetSetMethod() is null)
-            return CommandCode.Error("unknown config key");
-        prop.SetValue(config, Convert.ChangeType(Value, prop.PropertyType));
+        if (string.IsNullOrEmpty(options.Key))
+            return console.OutputCommandError(CommandCode.MissingArg("key"));
+        config.SetValue(options.Key, options.Value);
         config.SaveConfig();
-        return CommandCode.Success();
+        return Task.FromResult(0);
     }
 
-    private CommandCode GetAction(Config config)
+    private Task<int> GetAction(Config config, ConfigCommandOptions options)
     {
-        if(string.IsNullOrEmpty(Key))
-            return CommandCode.MissingArg("key");
-        var prop = config.GetType().GetProperty(Key);
-        if(prop is null || prop.GetSetMethod() is null)
-            return CommandCode.Error("unknown config key");
-        Tools.WriteColoredLine(prop.GetValue(config)?.ToString() ?? "NULL", ConsoleColor.White);
-        return CommandCode.Success();
+        if (string.IsNullOrEmpty(options.Key))
+            return console.OutputCommandError(CommandCode.MissingArg("key"));
+        console.WriteLine(config.GetValue(options.Key));
+        return Task.FromResult(0);
     }
 }

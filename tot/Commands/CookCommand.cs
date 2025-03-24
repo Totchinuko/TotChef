@@ -1,71 +1,88 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.ConstrainedExecution;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class CookCommand : Command<CookCommandOptions, CookCommandHandler>
 {
-    [Verb("cook", HelpText = "Start a cook process for the mod")]
-    internal class CookCommand : ModBasedCommand, ICommand
+    public CookCommand() : base("cook", "Start a cook process for the mod")
     {
-        [Option('f', "force", HelpText = "Force the cook process even if the repo is dirty")]
-        public bool force { get; set; }
+        var opt = new Option<bool>("--force", "Force the cook process even if the repo is dirty");
+        opt.AddAlias("-f");
+        AddOption(opt);
+        opt = new Option<bool>("--verbose", "Display the Dev Kit cook output");
+        opt.AddAlias("-v");
+        AddOption(opt);
+    }
+}
 
-        [Option('v', "verbose", HelpText = "Display the Dev Kit cook output")]
-        public bool Verbose { get; set; }
+public class CookCommandOptions : ModBasedCommandOptions
+{
+    public bool Force { get; set; }
+    public bool Verbose { get; set; }
+}
 
-        public CommandCode Execute()
+public class CookCommandHandler(
+    IConsole console,
+    Stove stove,
+    KitchenClerk clerk,
+    GitHandler git,
+    KitchenFiles kitchenFiles) : ModBasedCommandHandler<CookCommandOptions>(kitchenFiles)
+{
+    private readonly IConsole _console = console;
+    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
+
+    public override async Task<int> HandleAsync(CookCommandOptions options, CancellationToken cancellationToken)
+    {
+        var code = await base.HandleAsync(options, cancellationToken);
+        if (code != 0) return code;
+
+        if (git.IsGitRepoDirty(_kitchenFiles.ModsShared) && !options.Force)
+            return await _console.OutputCommandError(CommandCode.RepositoryIsDirty, "Cooking:ModsShared repo is dirty");
+        if (git.IsGitRepoDirty(_kitchenFiles.ModFolder) && !options.Force)
+            return await _console.OutputCommandError(CommandCode.RepositoryIsDirty,
+                $"Cooking:Mod {_kitchenFiles.ModName} repo is dirty");
+        if (!git.IsModsSharedBranchValid())
+            return await _console.OutputCommandError(CommandCode.RepositoryWrongBranch,
+                "Cooking:Dedicated ModsShared branch is not checked out");
+
+        try
         {
-            if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                return clerk.LastError;
+            _kitchenFiles.DeleteAnyActive();
+            _kitchenFiles.CreateActive();
+            _console.WriteLine($"Cooking:{_kitchenFiles.ModName} is now active");
 
-            if (clerk.IsGitRepoDirty(clerk.ModsShared) && !force)
-                return new CommandCode { code = CommandCode.RepositoryIsDirty, message = "ModsShared repo is dirty" };
-            if (clerk.IsGitRepoDirty(clerk.ModFolder) && !force)
-                return new CommandCode { code = CommandCode.RepositoryIsDirty, message = $"Mod {clerk.ModName} repo is dirty" };
-            if (!clerk.IsModsSharedBranchValid())
-                return new CommandCode { code = CommandCode.RepositoryWrongBranch, message = "Dedicated ModsShared branch is not checked out" };
-
-            if (!clerk.SwitchActive())
-                return clerk.LastError;
-            Tools.WriteColoredLine($"{clerk.ModName} is now active", ConsoleColor.Cyan);
-
-            clerk.GetCookInfo(out List<string> included, out List<string> excluded);
-            List<string>? change = clerk.UpdateIncludedCookInfo(clerk.ModLocalFolder, ref included, excluded);
-            if (change == null)
-                return clerk.LastError;
+            var cookInfos = await clerk.GetCookInfo();
+            var change = clerk.UpdateIncludedCookInfo(_kitchenFiles.ModLocalFolder, cookInfos);
 
             if (change.Count > 0)
             {
-                if (!clerk.SetCookInfo(included, excluded))
-                    return clerk.LastError;
-                clerk.DumpChange(change, ConsoleColor.Yellow);
-                Tools.WriteColoredLine($"Added {change.Count} missing local mod files to cooking", ConsoleColor.Cyan);
+                await clerk.SetCookInfo(cookInfos);
+                _console.WriteLine($"Cooking:Added {change.Count} missing local mod files to cooking");
+                foreach (var c in change)
+                    _console.WriteLine("Cooking:Change:" + c);
             }
-            
-            if(!clerk.AutoBumpBuild())
-                return clerk.LastError;
-            
-            if(!clerk.UpdateModDevKitVersion())
-                return clerk.LastError;
 
-            Tools.WriteColoredLine($"Cleaning cook folders from previous operations...", ConsoleColor.Cyan);
-            clerk.CleanCookingFolder();
-            Tools.WriteColoredLine($"Cooking {clerk.ModName}...", ConsoleColor.Cyan);
-            Stove stove = new Stove(clerk, Verbose);
-            stove.StartCooking();
-
-            if (!stove.wasSuccess)
-                return new CommandCode { code = CommandCode.CookingFailure, message = $"Cooking failed. {stove.errors} Error(s)" };
-
+            await clerk.AutoBumpBuild();
+            await clerk.UpdateModDevKitVersion();
+            _console.WriteLine("Cooking:Cleaning cook folders from previous operations...");
             clerk.CleanCookedFolder();
+            clerk.CleanCookingFolder();
+            _console.WriteLine($"Cooking:Cooking {_kitchenFiles.ModName}...");
 
-            if (!clerk.CopyAndFilter(Verbose))
-                return clerk.LastError;
+            stove.StartCooking(options.Verbose);
+            if (!stove.WasSuccess)
+                throw new CommandException(CommandCode.CookingFailure, $"Cooking failed. {stove.Errors} Error(s)");
 
-            return CommandCode.Success($"{clerk.ModName} cooked successfuly.. !");
+            await clerk.CopyAndFilter(options.Verbose);
         }
+        catch (CommandException ex)
+        {
+            return await _console.OutputCommandError(ex);
+        }
+
+        _console.WriteLine($"{_kitchenFiles.ModName} cooked successfully.. !");
+        return 0;
     }
 }

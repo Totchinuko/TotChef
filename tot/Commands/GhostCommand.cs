@@ -1,38 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class GhostCommand : ModBasedCommand<GhostCommandOptions, GhostCommandHandler>
 {
-    [Verb("ghost", HelpText = "List invalid files and clean them")]
-    internal class GhostCommand : ModBasedCommand, ICommand
+    public GhostCommand() : base("ghost", "List invalid files and clean them")
     {
-        [Option('c', "clean", Required = false, HelpText = "Clean invalid files")]
-        public bool Clean { get; set; }
+        var opt = new Option<bool>("--cleanup");
+        opt.AddAlias("-c");
+        AddOption(opt);
+    }
+}
 
-        public CommandCode Execute()
+public class GhostCommandOptions : ModBasedCommandOptions
+{
+    public bool Cleanup { get; set; }
+}
+
+public class GhostCommandHandler(KitchenFiles kitchenFiles, IConsole console)
+    : ModBasedCommandHandler<GhostCommandOptions>(kitchenFiles)
+{
+    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
+
+    public override async Task<int> HandleAsync(GhostCommandOptions options, CancellationToken cancellationToken)
+    {
+        await base.HandleAsync(options, cancellationToken);
+
+        List<string> files = Directory.GetFiles(_kitchenFiles.ModFolder.FullName, "*.*", SearchOption.AllDirectories)
+            .ToList();
+
+        console.WriteLine("Invalid files:");
+        foreach (var file in files)
         {
-            if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                return clerk.LastError;
-
-            DirectoryInfo modDir = clerk.ModFolder;
-            List<string> files = Directory.GetFiles(modDir.FullName, "*.*", SearchOption.AllDirectories).ToList();
-
-            Tools.WriteColoredLine("Invalid files:", ConsoleColor.Cyan);
-            foreach (string file in files)
-            {
-                FileInfo info = new FileInfo(file);
-                if (info.Extension != ".uasset" && info.Extension != ".umap") continue;
-                if (info.Length >= 4 * 1024) continue;
-                if (!clerk.FileContain(info, "ObjectRedirector") && info.Length >= 1024) continue;
-                Tools.WriteColoredLine($"{file}", ConsoleColor.Red);
-                if (Clean)
-                    info.Delete();
-            }
-
-            return CommandCode.Success();
+            var info = new FileInfo(file);
+            if (info.Extension != Constants.UAssetExt && info.Extension != Constants.UMapExt) continue;
+            if (info.Length >= 4 * 1024) continue;
+            var contain = await _kitchenFiles.FileContain(info, "ObjectRedirector");
+            if (!contain && info.Length >= 1024) continue;
+            console.WriteLine($"{file}");
+            if (options.Cleanup)
+                info.Delete();
         }
+
+        return 0;
     }
 }

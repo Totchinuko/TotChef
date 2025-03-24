@@ -1,24 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class ValidateCommand : ModBasedCommand<ValidateCommandOptions, ValidateCommandHandler>
 {
-    [Verb("validate", HelpText = "Validate git repositories for the cooking process")]
-    internal class ValidateCommand : ModBasedCommand, ICommand
+    public ValidateCommand() : base("validate", "Validate git repositories for the cooking process")
     {
-        public CommandCode Execute()
-        {
-            if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                return clerk.LastError;
+    }
+}
 
-            if (clerk.IsGitRepoDirty(clerk.ModsShared))
-                return new CommandCode { code = CommandCode.RepositoryIsDirty, message = "ModsShared repo is dirty" };
-            if (clerk.IsGitRepoDirty(clerk.ModFolder))
-                return new CommandCode { code = CommandCode.RepositoryIsDirty, message = $"Mod {clerk.ModName} repo is dirty" };
-            return CommandCode.Success();
+public class ValidateCommandOptions : ModBasedCommandOptions
+{
+}
+
+public class ValidateCommandHandler(IConsole console, GitHandler git, KitchenFiles kitchenFiles)
+    : ModBasedCommandHandler<ValidateCommandOptions>(kitchenFiles)
+{
+    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
+
+    public override async Task<int> HandleAsync(ValidateCommandOptions options, CancellationToken cancellationToken)
+    {
+        await base.HandleAsync(options, cancellationToken);
+
+        try
+        {
+            if (git.IsGitRepoDirty(_kitchenFiles.ModSharedFolder))
+                throw new CommandException(CommandCode.RepositoryIsDirty, "ModsShared repo is dirty");
+            if (git.IsGitRepoDirty(_kitchenFiles.ModFolder))
+                throw new CommandException(CommandCode.RepositoryIsDirty, $"Mod {_kitchenFiles.ModName} repo is dirty");
+            return 0;
+        }
+        catch (CommandException ex)
+        {
+            return await console.OutputCommandError(ex);
         }
     }
 }

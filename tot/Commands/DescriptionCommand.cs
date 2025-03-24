@@ -1,73 +1,58 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.CommandLine;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class DescriptionCommand : ModBasedCommand<DescriptionCommandOptions, DescriptionCommandHandler>
 {
-    [Verb("description", HelpText = "Edit the mod description")]
-    internal class DescriptionCommand : ModBasedCommand, ICommand
+    public DescriptionCommand() : base("description", "Edit the mod description")
     {
+    }
+}
 
-        public CommandCode Execute()
+public class DescriptionCommandOptions : ModBasedCommandOptions
+{
+}
+
+public class DescriptionCommandHandler(Config config, IConsole console, GitHandler git, KitchenFiles kitchenFiles)
+    : ModBasedCommandHandler<DescriptionCommandOptions>(kitchenFiles)
+{
+    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
+
+    public override async Task<int> HandleAsync(DescriptionCommandOptions options, CancellationToken cancellationToken)
+    {
+        await base.HandleAsync(options, cancellationToken);
+
+        try
         {
-            if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                return clerk.LastError;
-
-            if (!clerk.GetModInfos(out ModinfoData modinfo))
-                return clerk.LastError;
-
-            if (!clerk.GetTemporaryFile(clerk.ModName + ".txt", out string path))
-                return clerk.LastError;
-            
-            if (!File.Exists(path))
-                return CommandCode.Error("File not found: " + path);
-            string description = modinfo.Description;
-            File.WriteAllText(path, description);
-
-            using (Process fileOpener = new Process())
+            var modInfos = await _kitchenFiles.GetModInfos();
+            var tmpFile = await _kitchenFiles.CreateTemporaryTextFile(modInfos.Description);
+            using (var fileOpener = new Process())
             {
-                fileOpener.StartInfo.FileName = "nano";
-                fileOpener.StartInfo.Arguments = $"\"{path}\"";
+                fileOpener.StartInfo.FileName = config.DefaultCliEditor;
+                fileOpener.StartInfo.Arguments = $"\"{tmpFile}\"";
                 fileOpener.StartInfo.UseShellExecute = false;
                 fileOpener.Start();
-                fileOpener.WaitForExit();
+                await fileOpener.WaitForExitAsync(cancellationToken);
             }
-            
-            if (!File.Exists(path))
-                return CommandCode.Error("File not found: " + path);
-            description = File.ReadAllText(path);
 
+            var description = await File.ReadAllTextAsync(tmpFile, cancellationToken);
             description = description.Trim();
-            if(modinfo.Description == description)
-                return CommandCode.Success();
-            modinfo.Description = description;
-            Tools.WriteColoredLine($"Commiting changes", ConsoleColor.Cyan);
-            if (!clerk.SetModInfos(modinfo, "Update mod description"))
-                return clerk.LastError;
+            if (modInfos.Description == description)
+                return 0;
 
-            return CommandCode.Success();
+            modInfos.Description = description;
+            console.WriteLine("Commiting changes");
+            await _kitchenFiles.SetModInfos(modInfos);
+            git.CommitFile(_kitchenFiles.ModFolder, _kitchenFiles.ModCookInfo, "Update mod description");
         }
-
-        public void WaitForFile(string path)
+        catch (CommandException ex)
         {
-            FileStream? file = null;
-            while (true)
-            {
-                try
-                {
-                    file = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-                }
-                catch (IOException)
-                {
-                    if(file is not null) file.Dispose();   
-                    Thread.Sleep(500);
-                    continue;
-                }
-                break;
-            }
+            return await console.OutputCommandError(ex);
         }
+
+        return 0;
     }
 }

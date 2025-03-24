@@ -1,42 +1,57 @@
-﻿using CommandLine.Text;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
 using System.Diagnostics;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class PakCommand : ModBasedCommand<PakCommandOptions, PakCommandHandler>
 {
-    [Verb("pak", HelpText = "Pak the previously cooked files")]
-    internal class PakCommand : ModBasedCommand, ICommand
+    public PakCommand() : base("pak", "Pak the previously cooked files")
     {
-        [Option('c', "compress", HelpText = "Compress the files to reduce the final mod size")]
-        public bool Compress { get; set; }
+        var opt = new Option<bool>("--compress", "Compress the files to reduce the final mod size");
+        opt.AddAlias("-c");
+        AddOption(opt);
+    }
+}
 
-        public CommandCode Execute()
+public class PakCommandOptions : ModBasedCommandOptions
+{
+    public bool Compress { get; set; }
+}
+
+public class PakCommandHandler(IConsole console, KitchenFiles kitchenFiles)
+    : ModBasedCommandHandler<PakCommandOptions>(kitchenFiles)
+{
+    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
+
+    public override async Task<int> HandleAsync(PakCommandOptions options, CancellationToken cancellationToken)
+    {
+        await base.HandleAsync(options, cancellationToken);
+
+        try
         {
-            if(!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                return clerk.LastError;
-
-            if (!clerk.ModInfo.Exists)
-                return CommandCode.NotFound(clerk.ModInfo);
-            clerk.CreateModPakBackup();
-
-            foreach (FileInfo file in clerk.ModFolder.GetFiles())
+            _kitchenFiles.CreateModPakBackup();
+            foreach (var file in _kitchenFiles.ModFolder.GetFiles())
                 if (!file.Name.StartsWith(".") && file.Name != "active.txt")
-                    file.CopyTo(Path.Join(clerk.ModCookedFolder.FullName, file.Name), true);
+                    file.CopyTo(Path.Join(_kitchenFiles.ModCookedFolder.FullName, file.Name), true);
 
-            Tools.WriteColoredLine($"Paking {clerk.ModName}..", ConsoleColor.Cyan);
-            Process p = Process.Start(
-                clerk.UnrealPak.FullName,
+            console.WriteLine($"Paking {_kitchenFiles.ModName}..");
+            var p = Process.Start(
+                _kitchenFiles.UnrealPak.FullName,
                 string.Join(" ",
-                    clerk.ModPakFile.FullName,
-                    "-Create=" + clerk.ModCookedFolder.FullName,
-                    Compress ? "-compress" : ""
+                    _kitchenFiles.ModPakFile.FullName,
+                    "-Create=" + _kitchenFiles.ModCookedFolder.FullName,
+                    options.Compress ? "-compress" : ""
                 ));
-            p.WaitForExit();
-            return CommandCode.Success($"{clerk.ModName} has been paked successfuly.. !");
+            await p.WaitForExitAsync(cancellationToken);
+            console.WriteLine($"{_kitchenFiles.ModName} has been paked successfully.. !");
         }
+        catch (CommandException ex)
+        {
+            return await console.OutputCommandError(ex);
+        }
+
+        return 0;
     }
 }

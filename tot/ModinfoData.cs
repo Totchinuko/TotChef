@@ -1,60 +1,47 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
-namespace Tot
+namespace Tot;
+
+[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true, WriteIndented = true)]
+[JsonSerializable(typeof(ModinfoData))]
+public partial class ModinfoDataJsonContext : JsonSerializerContext
 {
-    internal class ModinfoData
-    {
-        [JsonPropertyName("name")]
-        public string Name { get; set; } = string.Empty;
-        
-        [JsonPropertyName("description")]
-        public string Description { get; set; } = string.Empty;
-        
-        [JsonPropertyName("changeNote")]
-        public string ChangeNote { get; set; } = string.Empty;
+}
 
-        [JsonPropertyName("author")]
-        public string Author { get; set; } = string.Empty;
-        
-        [JsonPropertyName("authorUrl")]
-        public string AuthorUrl { get; set; } = string.Empty;
+public class ModinfoData
+{
+    [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
 
-        [JsonPropertyName("versionMajor")]
-        public int VersionMajor { get; set; } = 0;
+    [JsonPropertyName("description")] public string Description { get; set; } = string.Empty;
 
-        [JsonPropertyName("versionMinor")]
-        public int VersionMinor { get; set; } = 0;
+    [JsonPropertyName("changeNote")] public string ChangeNote { get; set; } = string.Empty;
 
-        [JsonPropertyName("versionBuild")]
-        public int VersionBuild { get; set; }
+    [JsonPropertyName("author")] public string Author { get; set; } = string.Empty;
 
-        [JsonPropertyName("bRequiresLoadOnStartup")]
-        public bool BRequiresLoadOnStartup { get; set; } = false;
+    [JsonPropertyName("authorUrl")] public string AuthorUrl { get; set; } = string.Empty;
 
-        [JsonPropertyName("steamPublishedFileId")]
-        public string SteamPublishedFileId { get; set; } = string.Empty;
+    [JsonPropertyName("versionMajor")] public int VersionMajor { get; set; } = 0;
 
-        [JsonPropertyName("steamTestLivePublishedFileId")]
-        public string SteamTestLivePublishedFileId { get; set; } = string.Empty;
+    [JsonPropertyName("versionMinor")] public int VersionMinor { get; set; } = 0;
 
-        [JsonPropertyName("steamVisibility")]
-        public int SteamVisibility { get; set; } = 0;
+    [JsonPropertyName("versionBuild")] public int VersionBuild { get; set; }
 
-        [JsonPropertyName("folderName")]
-        public string FolderName { get; set; } = string.Empty;
+    [JsonPropertyName("bRequiresLoadOnStartup")]
+    public bool BRequiresLoadOnStartup { get; set; } = false;
 
-        [JsonPropertyName("revisionNumber")]
-        public int RevisionNumber { get; set; } = 0;
+    [JsonPropertyName("steamPublishedFileId")]
+    public string SteamPublishedFileId { get; set; } = string.Empty;
 
-        [JsonPropertyName("snapshotId")]
-        public int SnapshotId { get; set; } = 0;
+    [JsonPropertyName("steamTestLivePublishedFileId")]
+    public string SteamTestLivePublishedFileId { get; set; } = string.Empty;
 
-        [JsonPropertyName("fileSize")]
-        public int FileSize { get; set; } = -2;
-    }
+    [JsonPropertyName("steamVisibility")] public int SteamVisibility { get; set; } = 0;
+
+    [JsonPropertyName("folderName")] public string FolderName { get; set; } = string.Empty;
+
+    [JsonPropertyName("revisionNumber")] public int RevisionNumber { get; set; } = 0;
+
+    [JsonPropertyName("snapshotId")] public int SnapshotId { get; set; } = 0;
+
+    [JsonPropertyName("fileSize")] public int FileSize { get; set; } = -2;
 }

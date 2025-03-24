@@ -1,22 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class SwitchCommand : ModBasedCommand<SwitchCommandOptions, SwitchCommandHandler>
 {
-    [Verb("switch", HelpText = "Switch the active.txt to the selected mod")]
-    internal class SwitchCommand : ModBasedCommand, ICommand
+    public SwitchCommand() : base("switch", "Switch the active.txt to the selected mod")
     {
-        public CommandCode Execute()
-        {
-            if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                return clerk.LastError;
+    }
+}
 
-            if(!clerk.SwitchActive())
-                return clerk.LastError;
-            return CommandCode.Success($"{clerk.ModName} is now active");
+public class SwitchCommandOptions : ModBasedCommandOptions
+{
+}
+
+public class SwitchCommandHandler(IConsole console, KitchenFiles kitchenFiles)
+    : ModBasedCommandHandler<SwitchCommandOptions>(kitchenFiles)
+{
+    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
+
+    public override async Task<int> HandleAsync(SwitchCommandOptions options, CancellationToken cancellationToken)
+    {
+        await base.HandleAsync(options, cancellationToken);
+
+        try
+        {
+            _kitchenFiles.DeleteAnyActive();
+            _kitchenFiles.CreateActive();
+            console.WriteLine($"{_kitchenFiles.ModName} is now active");
         }
+        catch (CommandException ex)
+        {
+            return await console.OutputCommandError(ex);
+        }
+
+        return 0;
     }
 }

@@ -1,27 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class CleanCommand : Command<ModBasedCommandOptions, CleanCommandHandler>
 {
-    [Verb("clean", HelpText = "Clean any missing file from the cookinfo.ini")]
-    internal class CleanCommand : ModBasedCommand, ICommand
+    public CleanCommand() : base("clean", "Clean any missing file from the cookinfo.ini")
     {
-        public CommandCode Execute()
+    }
+}
+
+public class CleanCommandHandler(IConsole console, KitchenClerk clerk, KitchenFiles kitchenFiles)
+    : ModBasedCommandHandler<ModBasedCommandOptions>(kitchenFiles)
+{
+    public IConsole Console { get; } = console;
+    public KitchenClerk Clerk { get; } = clerk;
+    public KitchenFiles KitchenFiles { get; } = kitchenFiles;
+
+    public override async Task<int> HandleAsync(ModBasedCommandOptions options, CancellationToken token)
+    {
+        await base.HandleAsync(options, token);
+
+        try
         {
-            if(!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                return clerk.LastError;
-
-            clerk.GetCookInfo(out List<string> included, out List<string> excluded);
-            List<string> changes = clerk.RemoveMissingFiles(ref included, ref excluded);
-            
-            if (!clerk.SetCookInfo(included, excluded))
-                return clerk.LastError;
-
-            clerk.DumpChange(changes, ConsoleColor.Magenta);
-            return CommandCode.Success($"{changes.Count} missing file(s) removed from {clerk.ModName} cookinfo.ini");
+            var cookInfos = await Clerk.GetCookInfo();
+            var changes = Clerk.RemoveMissingFiles(cookInfos);
+            await Clerk.SetCookInfo(cookInfos);
+            foreach (var file in changes)
+                Console.WriteLine(file);
+            Console.WriteLine($"{changes.Count} missing file(s) removed from {KitchenFiles.ModName} cookinfo.ini");
         }
+        catch (CommandException ex)
+        {
+            return await Console.OutputCommandError(ex);
+        }
+
+        return 0;
     }
 }

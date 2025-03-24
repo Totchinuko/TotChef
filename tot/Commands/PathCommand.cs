@@ -1,41 +1,63 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
+using tot_lib;
+using tot.Services;
 
-namespace Tot.Commands
+namespace Tot.Commands;
+
+public class PathCommand : ModBasedCommand<PathCommandOptions, PathCommandHandler>
 {
-    [Verb("path", HelpText = "Return a path to be used with cd")]
-    internal class PathCommand : ModBasedCommand, ICommand
+    public PathCommand() : base("path", "Return a path to be used with cd")
     {
-        [Option('s', "shared", HelpText = "Return the path to the shared folder")]
-        public bool shared { get; set; }
+        var opt = new Option<bool>("--mods-shared", "Return the path to the shared folder");
+        opt.AddAlias("-s");
+        AddOption(opt);
+        opt = new Option<bool>("--pak-file", "Return the path to the cooked pak file");
+        opt.AddAlias("-p");
+        AddOption(opt);
+    }
+}
 
-        [Option('p', "pak", HelpText = "Return the path to the cooked pak file")]
-        public bool pak { get; set; }
+public class PathCommandOptions : ModBasedCommandOptions
+{
+    public bool ModsShared { get; set; }
+    public bool PakFile { get; set; }
+}
 
-        public CommandCode Execute()
+public class PathCommandHandler(IConsole console, KitchenFiles kitchenFiles)
+    : ModBasedCommandHandler<PathCommandOptions>(kitchenFiles)
+{
+    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
+
+    public override async Task<int> HandleAsync(PathCommandOptions options, CancellationToken cancellationToken)
+    {
+        await base.HandleAsync(options, cancellationToken);
+
+        try
         {
-            string path = "";
-            if(!string.IsNullOrEmpty(ModName))
+            var path = "";
+            if (!string.IsNullOrEmpty(_kitchenFiles.ModName))
             {
-                if (!KitchenClerk.CreateClerk(ModName, out KitchenClerk clerk))
-                    return clerk.LastError;
-                path = clerk.ModFolder.PosixFullName();
+                if (!_kitchenFiles.IsModPathValid())
+                    throw CommandCode.NotFound(_kitchenFiles.ModFolder);
+                path = _kitchenFiles.ModFolder.PosixFullName();
             }
             else
             {
-                if (!KitchenClerk.CreateDevKitClerk(out KitchenClerk clerk))
-                    return clerk.LastError;
-                if(shared)
-                    path = clerk.ModsShared.PosixFullName();
-                else if(pak)
-                    path = clerk.ModPakFile.PosixFullName();
+                if (options.ModsShared)
+                    path = _kitchenFiles.ModsShared.PosixFullName();
+                else if (options.PakFile)
+                    path = _kitchenFiles.ModPakFile.PosixFullName();
+                else
+                    throw CommandCode.MissingArg(nameof(options.ConanMod));
             }
 
-            Console.Write(path);
-            return CommandCode.Success();
+            console.Write(path);
         }
+        catch (CommandException ex)
+        {
+            return await console.OutputCommandError(ex);
+        }
+
+        return 0;
     }
 }
