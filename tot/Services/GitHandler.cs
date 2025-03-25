@@ -15,7 +15,7 @@ public class GitHandler(Config config, KitchenFiles files) : ITotService
         var status = repo.RetrieveStatus();
         if (status.Staged.Any())
             throw new CommandException(CommandCode.RepositoryIsDirty, "Repository is dirty");
-        repo.Index.Add(file.Name);
+        repo.Index.Add(file.FullName.RemoveRootFolder(directory.FullName));
         repo.Index.Write();
         Signature author = new(config.GitAuthorName, config.GitAuthorEmail, DateTime.Now);
         repo.Commit(message, author, author);
