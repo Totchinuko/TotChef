@@ -5,19 +5,26 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class SwitchCommand : ModBasedCommand, ITotCommand
+public class SwitchCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
 {
     public string Command => "switch";
     public string Description => "Switch the active.txt to the selected mod";
 
-    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public string ModName { get; set; } = string.Empty;
+
+    public IEnumerable<Option> GetOptions()
+    {
+        yield return Utils.GetModNameOption(x => ModName = x);
+    }
+    
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         var console = provider.GetRequiredService<IColoredConsole>();
         
         try
         {
-            await base.InvokeAsync(provider, token);
+            kFiles.SetModName(ModName);
 
             kFiles.DeleteAnyActive();
             kFiles.CreateActive();

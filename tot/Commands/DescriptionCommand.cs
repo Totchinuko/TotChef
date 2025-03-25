@@ -7,12 +7,19 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class DescriptionCommand : ModBasedCommand, ITotCommand
+public class DescriptionCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
 {
     public string Command => "description";
     public string Description => "Edit the mod description";
 
-    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken cancellationToken)
+    public string ModName { get; set; } = string.Empty;
+
+    public IEnumerable<Option> GetOptions()
+    {
+        yield return Utils.GetModNameOption(x => ModName = x);
+    }
+    
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken cancellationToken)
     {
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         var config = provider.GetRequiredService<Config>();
@@ -21,8 +28,7 @@ public class DescriptionCommand : ModBasedCommand, ITotCommand
         
         try
         {
-            await base.InvokeAsync(provider, cancellationToken);
-
+            kFiles.SetModName(ModName);
             var modInfos = await kFiles.GetModInfos();
             var tmpFile = await kFiles.CreateTemporaryTextFile(modInfos.Description);
             using (var fileOpener = new Process())

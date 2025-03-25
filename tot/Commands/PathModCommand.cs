@@ -1,37 +1,37 @@
 ﻿using System.CommandLine;
-using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class OpenCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
+public class PathModCommand : ITotCommand, ITotCommandInvoked, ITotCommandArguments
 {
-    public string Command => "open";
-    public string Description => "Open the folder containing the pak files";
+    public string Command => "mod";
+    public string Description => "Print out the path of a mod";
 
     public string ModName { get; set; } = string.Empty;
-
-    public IEnumerable<Option> GetOptions()
-    {
-        yield return Utils.GetModNameOption(x => ModName = x);
-    }
-    
     public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        var console = provider.GetRequiredService<IColoredConsole>();
         var kFiles = provider.GetRequiredService<KitchenFiles>();
-        
+        var console = provider.GetRequiredService<IColoredConsole>();
         try
         {
             kFiles.SetModName(ModName);
-            Process.Start("explorer.exe", provider.GetRequiredService<KitchenFiles>().ModPakFolder.FullName);
+            console.Write(kFiles.ModFolder.PosixFullName());
             return 0;
         }
         catch (CommandException ex)
         {
             return await console.OutputCommandError(ex);
         }
+    }
+
+    public IEnumerable<Argument> GetArguments()
+    {
+        var arg = new TotArgument<string>("mod-name");
+        arg.AddSetter(x => ModName = x ?? string.Empty);
+        arg.SetDefaultValue(string.Empty);
+        yield return arg;
     }
 }

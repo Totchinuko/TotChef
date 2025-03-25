@@ -5,7 +5,7 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class SwapCommand : ModBasedCommand, ITotCommand
+public class SwapCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
 {
     public string Command => "swap";
     public string Description => "Swap files in the cookinfo.ini";
@@ -13,11 +13,12 @@ public class SwapCommand : ModBasedCommand, ITotCommand
     public bool Exclude { get; set; }
     public string SearchPattern { get; set; } = string.Empty;
     public bool Recursive { get; set; }
+    
+    public string ModName { get; set; } = string.Empty;
 
-    public override IEnumerable<Option> GetOptions()
+    public IEnumerable<Option> GetOptions()
     {
-        foreach (var option in base.GetOptions())
-            yield return option;
+        yield return Utils.GetModNameOption(x => ModName = x);
         
         var optb = new TotOption<bool>("--exclude", "Swap files to the exclude list");
         optb.AddAlias("-e");
@@ -33,7 +34,7 @@ public class SwapCommand : ModBasedCommand, ITotCommand
         yield return opts;
     }
 
-    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         var clerk = provider.GetRequiredService<KitchenClerk>();
@@ -41,7 +42,7 @@ public class SwapCommand : ModBasedCommand, ITotCommand
         
         try
         {
-            await base.InvokeAsync(provider, token);
+            kFiles.SetModName(ModName);
 
             var filter = SearchPattern;
             if (!string.IsNullOrEmpty(filter) &&

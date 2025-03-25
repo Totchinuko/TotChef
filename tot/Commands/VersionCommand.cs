@@ -6,12 +6,19 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public partial class VersionCommand : ModBasedCommand, ITotCommand, ITotCommandArguments
+public partial class VersionCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand, ITotCommandArguments
 {
     public string VersionPart { get; protected set; } = string.Empty;
     
     public string Command => "version";
     public string Description => "Handle mod version modification and display";
+    
+    public string ModName { get; set; } = string.Empty;
+
+    public IEnumerable<Option> GetOptions()
+    {
+        yield return Utils.GetModNameOption(x => ModName = x);
+    }
     
     public IEnumerable<Argument> GetArguments()
     {
@@ -21,17 +28,17 @@ public partial class VersionCommand : ModBasedCommand, ITotCommand, ITotCommandA
         yield return arg;
     }
     
-    public override async Task<int> InvokeAsync(IServiceProvider services, CancellationToken cancellationToken)
+    public async Task<int> InvokeAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
-        var kitchenFiles = services.GetRequiredService<KitchenFiles>();
+        var kFiles = services.GetRequiredService<KitchenFiles>();
         var git = services.GetRequiredService<GitHandler>();
         var console = services.GetRequiredService<IColoredConsole>();
 
         try
         {
-            await base.InvokeAsync(services, cancellationToken);
+            kFiles.SetModName(ModName);
 
-            var modInfos = await kitchenFiles.GetModInfos();
+            var modInfos = await kFiles.GetModInfos();
             switch (VersionPart)
             {
                 case "major":
@@ -54,8 +61,8 @@ public partial class VersionCommand : ModBasedCommand, ITotCommand, ITotCommandA
             modInfos.Name = regex.Replace(modInfos.Name,
                 $"{modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
             console.WriteLine(modInfos.Name);
-            await kitchenFiles.SetModInfos(modInfos);
-            git.CommitFile(kitchenFiles.ModFolder, kitchenFiles.ModInfo,
+            await kFiles.SetModInfos(modInfos);
+            git.CommitFile(kFiles.ModFolder, kFiles.ModInfo,
                 $"Bump version to {modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
         }
         catch (CommandException ex)

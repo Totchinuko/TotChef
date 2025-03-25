@@ -5,19 +5,19 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class CookCommand : ModBasedCommand, ITotCommand
+public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
 {
     public bool Force { get; set; }
     public bool Verbose { get; set; }
     
     public string Command => "cook";
     public string Description => "Start a cook process for the mod";
+    
+    public string ModName { get; set; } = string.Empty;
 
-    public override IEnumerable<Option> GetOptions()
+    public IEnumerable<Option> GetOptions()
     {
-        foreach (var option in base.GetOptions())
-            yield return option;
-        
+        yield return Utils.GetModNameOption(x => ModName = x);
         var opt = new TotOption<bool>("--force", "Force the cook process even if the repo is dirty");
         opt.AddAlias("-f");
         opt.AddSetter(x => Force = x);
@@ -28,7 +28,7 @@ public class CookCommand : ModBasedCommand, ITotCommand
         yield return opt;
     }
 
-    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken cancellationToken)
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken cancellationToken)
     {
         var git = provider.GetRequiredService<GitHandler>();
         var kFiles = provider.GetRequiredService<KitchenFiles>();
@@ -38,8 +38,7 @@ public class CookCommand : ModBasedCommand, ITotCommand
 
         try
         {
-            await base.InvokeAsync(provider, cancellationToken);
-
+            kFiles.SetModName(ModName);
             if (git.IsGitRepoDirty(kFiles.ModsShared) && !Force)
                 throw new CommandException(CommandCode.RepositoryIsDirty, "Cooking:ModsShared repo is dirty");
             if (git.IsGitRepoDirty(kFiles.ModFolder) && !Force)

@@ -103,7 +103,10 @@ public class KitchenFiles(Config config) : ITotService
         if (IsDevkitPathValid())
             _modName = string.IsNullOrEmpty(name) ? GetCurrentDirectoryMod() ?? "" : name;
         else
-            _modName = name;
+            throw new CommandException(CommandCode.DirectoryNotFound,
+                "Devkit directory could not be found, make sure the configuration is correct");
+        if (!IsModPathValid())
+            throw new CommandException(CommandCode.DirectoryNotFound, $"Mod not found {_modName}");
     }
 
     public async Task<string[]> GetCookInfos()

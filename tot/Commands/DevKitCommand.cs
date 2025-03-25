@@ -6,12 +6,19 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class DevKitCommand : ModBasedCommand, ITotCommand
+public class DevKitCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
 {
     public string Command => "devkit";
     public string Description => "Open the devkit for the targeted mod";
 
-    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public string ModName { get; set; } = string.Empty;
+
+    public IEnumerable<Option> GetOptions()
+    {
+        yield return Utils.GetModNameOption(x => ModName = x);
+    }
+    
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
         var git = provider.GetRequiredService<GitHandler>();
         var console = provider.GetRequiredService<IColoredConsole>();
@@ -19,7 +26,7 @@ public class DevKitCommand : ModBasedCommand, ITotCommand
         
         try
         {
-            await base.InvokeAsync(provider, token);
+            kFiles.SetModName(ModName);
 
             git.CheckoutModsSharedBranch(out var branch);
             console.WriteLine($"{branch} branch is now active on Shared repository");

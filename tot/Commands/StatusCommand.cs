@@ -1,23 +1,23 @@
 ﻿using System.CommandLine;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class StatusCommand : ModBasedCommand, ITotCommand
+public class StatusCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
 {
     public string Command => "status";
     public string Description => "List the content of the cookinfo.ini with file status";
     
     public bool Raw { get; set; }
     public string SearchPattern { get; set; } = string.Empty;
+    public string ModName { get; set; } = string.Empty;
 
-    public override IEnumerable<Option> GetOptions()
+    public IEnumerable<Option> GetOptions()
     {
-        foreach (var option in base.GetOptions())
-            yield return option;
-        
+        yield return Utils.GetModNameOption(x => ModName = x);
         var opt = new TotOption<bool>("--raw", "Display the raw list of the cookinfo.ini");
         opt.AddAlias("-r");
         opt.AddSetter(x => Raw = x);
@@ -28,14 +28,15 @@ public class StatusCommand : ModBasedCommand, ITotCommand
         yield return opt2;
     }
 
-    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
         var console = provider.GetRequiredService<IColoredConsole>();
         var clerk = provider.GetRequiredService<KitchenClerk>();
+        var kFiles = provider.GetRequiredService<KitchenFiles>();
         
         try
         {
-            await base.InvokeAsync(provider, token);
+            kFiles.SetModName(ModName);
 
             if (Raw)
             {
@@ -43,7 +44,6 @@ public class StatusCommand : ModBasedCommand, ITotCommand
                 return 0;
             }
 
-            var kFiles = provider.GetRequiredService<KitchenFiles>();
             await ExecuteFriendly(kFiles, clerk, console);
             return 0;
         }

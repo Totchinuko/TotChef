@@ -6,12 +6,19 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class CleanCommand : ModBasedCommand, ITotCommand
+public class CleanCommand : ITotCommand, ITotCommandInvoked, ITotCommandOptions
 {
     public string Command => "clean";
     public string Description => "Clean any missing file from the cookinfo.ini";
+    
+    public string ModName { get; set; } = string.Empty;
 
-    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public IEnumerable<Option> GetOptions()
+    {
+        yield return Utils.GetModNameOption(x => ModName = x);
+    }
+    
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
         var clerk = provider.GetRequiredService<KitchenClerk>();
         var kFiles = provider.GetRequiredService<KitchenFiles>();
@@ -19,8 +26,7 @@ public class CleanCommand : ModBasedCommand, ITotCommand
 
         try
         {
-            await base.InvokeAsync(provider, token);
-            
+            kFiles.SetModName(ModName);
             var cookInfos = await clerk.GetCookInfo();
             var changes = clerk.RemoveMissingFiles(cookInfos);
             await clerk.SetCookInfo(cookInfos);
@@ -35,4 +41,6 @@ public class CleanCommand : ModBasedCommand, ITotCommand
 
         return 0;
     }
+
+
 }

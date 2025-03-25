@@ -5,31 +5,31 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class GhostCommand : ModBasedCommand, ITotCommand, ITotCommandOptions
+public class GhostCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
 {
     public string Command => "ghost";
     public string Description => "List invalid files and clean them";
     
     public bool Cleanup { get; set; }
 
-    public override IEnumerable<Option> GetOptions()
+    public string ModName { get; set; } = string.Empty;
+    public IEnumerable<Option> GetOptions()
     {
-        foreach (var option in base.GetOptions())
-            yield return option;
+        yield return Utils.GetModNameOption(x => ModName = x);
         var opt = new TotOption<bool>("--cleanup");
         opt.AddAlias("-c");
         opt.AddSetter(x => Cleanup = x);
         yield return opt;
     }
 
-    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
         var console = provider.GetRequiredService<IColoredConsole>();
         var kFiles = provider.GetRequiredService<KitchenFiles>();
 
         try
         {
-            await base.InvokeAsync(provider, token);
+            kFiles.SetModName(ModName);
 
             List<string> files = Directory.GetFiles(kFiles.ModFolder.FullName, "*.*", SearchOption.AllDirectories)
                 .ToList();

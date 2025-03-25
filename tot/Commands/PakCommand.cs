@@ -6,30 +6,31 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class PakCommand : ModBasedCommand, ITotCommand
+public class PakCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
 {
     public string Command => "pak";
     public string Description => "Pak the previously cooked files";
     public bool Compress { get; set; }
 
-    public override IEnumerable<Option> GetOptions()
+    public string ModName { get; set; } = string.Empty;
+    
+    public IEnumerable<Option> GetOptions()
     {
-        foreach (var option in base.GetOptions())
-            yield return option;
+        yield return Utils.GetModNameOption(x => ModName = x); 
         var opt = new TotOption<bool>("--compress", "Compress the files to reduce the final mod size");
         opt.AddAlias("-c");
         opt.AddSetter(x => Compress = x);
         yield return opt;
     }
 
-    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
         var kFile = provider.GetRequiredService<KitchenFiles>();
         var console = provider.GetRequiredService<IColoredConsole>();
         
         try
         {
-            await base.InvokeAsync(provider, token);
+            kFile.SetModName(ModName);
 
             kFile.CreateModPakBackup();
             foreach (var file in kFile.ModFolder.GetFiles())

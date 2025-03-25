@@ -5,12 +5,19 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class ValidateCommand : ModBasedCommand, ITotCommand
+public class ValidateCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
 {
     public string Command => "validate";
     public string Description => "Validate git repositories for the cooking process";
 
-    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public string ModName { get; set; } = string.Empty;
+
+    public IEnumerable<Option> GetOptions()
+    {
+        yield return Utils.GetModNameOption(x => ModName = x);
+    }
+    
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         var console = provider.GetRequiredService<IColoredConsole>();
@@ -18,7 +25,7 @@ public class ValidateCommand : ModBasedCommand, ITotCommand
         
         try
         {
-            await base.InvokeAsync(provider, token);
+            kFiles.SetModName(ModName);
 
             if (git.IsGitRepoDirty(kFiles.ModSharedFolder))
                 throw new CommandException(CommandCode.RepositoryIsDirty, "ModsShared repo is dirty");
