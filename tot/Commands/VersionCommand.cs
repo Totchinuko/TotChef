@@ -6,7 +6,7 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public partial class VersionCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand, ITotCommandArguments
+public partial class VersionCommand : ITotCommandInvoked, ITotCommand, ITotCommandSubCommands, ITotCommandOptions
 {
     public string VersionPart { get; protected set; } = string.Empty;
     
@@ -20,50 +20,23 @@ public partial class VersionCommand : ITotCommandInvoked, ITotCommandOptions, IT
         yield return Utils.GetModNameOption(x => ModName = x);
     }
     
-    public IEnumerable<Argument> GetArguments()
+    public IEnumerable<ITotCommand> GetSubCommands()
     {
-        var arg = new TotArgument<string>("version-part", "Part of the version to bump (major.minor.build)");
-        arg.SetDefaultValue("build");
-        arg.AddSetter(v => VersionPart = v ?? string.Empty);
-        yield return arg;
+        yield return new VersionBuildCommand();
+        yield return new VersionMinorCommand();
+        yield return new VersionMajorCommand();
     }
     
-    public async Task<int> InvokeAsync(IServiceProvider services, CancellationToken cancellationToken)
+   public async Task<int> InvokeAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         var kFiles = services.GetRequiredService<KitchenFiles>();
-        var git = services.GetRequiredService<GitHandler>();
         var console = services.GetRequiredService<IColoredConsole>();
 
         try
         {
             kFiles.SetModName(ModName);
-
             var modInfos = await kFiles.GetModInfos();
-            switch (VersionPart)
-            {
-                case "major":
-                    modInfos.VersionMajor++;
-                    modInfos.VersionMinor = 0;
-                    modInfos.VersionBuild = 0;
-                    break;
-                case "minor":
-                    modInfos.VersionMinor++;
-                    modInfos.VersionBuild = 0;
-                    break;
-                case "build":
-                    modInfos.VersionBuild++;
-                    break;
-                default:
-                    throw CommandCode.MissingArg("version-part");
-            }
-
-            var regex = TitleVersionRegex();
-            modInfos.Name = regex.Replace(modInfos.Name,
-                $"{modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
-            console.WriteLine(modInfos.Name);
-            await kFiles.SetModInfos(modInfos);
-            git.CommitFile(kFiles.ModFolder, kFiles.ModInfo,
-                $"Bump version to {modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
+            console.Write($"{modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
         }
         catch (CommandException ex)
         {
@@ -74,8 +47,5 @@ public partial class VersionCommand : ITotCommandInvoked, ITotCommandOptions, IT
     }
 
     [GeneratedRegex(@"([0-9]+)\.([0-9]+)\.([0-9]+)")]
-    private static partial Regex TitleVersionRegex();
-
-
-
+    public static partial Regex TitleVersionRegex();
 }
