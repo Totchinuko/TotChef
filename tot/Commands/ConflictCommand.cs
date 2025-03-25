@@ -1,33 +1,35 @@
 ﻿using System.CommandLine;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class ConflictCommand : Command<ConfigCommandOptions, ConfigCommandHandler>
-{
-    public ConflictCommand() : base("conflict", "Process a mod list to highlight common files")
-    {
-        var arg = new Argument<string>("path", "Path to the mod list");
-        AddArgument(arg);
-    }
-}
-
-public class ConflictCommandOptions : ICommandOptions
+public class ConflictCommand : ITotCommand, ITotCommandArguments
 {
     public string Path { get; set; } = string.Empty;
-}
-
-internal class ConflictCommandHandler(IConsole console, KitchenClerk clerk)
-    : ICommandOptionsHandler<ConflictCommandOptions>
-{
-    public async Task<int> HandleAsync(ConflictCommandOptions options, CancellationToken cancellationToken)
+    
+    public string Command => "conflict";
+    public string Description => "Process a mod list to highlight common files";
+    
+    public IEnumerable<Argument> GetArguments()
     {
-        if (string.IsNullOrEmpty(options.Path))
-            return await console.OutputCommandError(CommandCode.MissingArg(nameof(options.Path)));
+        var arg = new TotArgument<string>("path", "Path to the mod list");
+        arg.AddSetter(x => Path = x ?? string.Empty);
+        yield return arg;
+    }
+    
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    {
+        var console = provider.GetRequiredService<IColoredConsole>();
+        var clerk = provider.GetRequiredService<KitchenClerk>();
+        
+        if (string.IsNullOrEmpty(Path))
+            return await console.OutputCommandError(CommandCode.MissingArg(nameof(Path)));
 
-        var modlistFile = new FileInfo(options.Path).GetProperCasedFileInfo();
-        var modlist = (await File.ReadAllLinesAsync(modlistFile.FullName, cancellationToken)).ToList();
+        var modlistFile = new FileInfo(Path).GetProperCasedFileInfo();
+        var modlist = (await File.ReadAllLinesAsync(modlistFile.FullName, token)).ToList();
 
         List<PakListing> listings = new List<PakListing>();
         try

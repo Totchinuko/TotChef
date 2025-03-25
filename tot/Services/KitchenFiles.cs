@@ -4,7 +4,7 @@ using Tot;
 
 namespace tot.Services;
 
-public class KitchenFiles(Config config)
+public class KitchenFiles(Config config) : ITotService
 {
     private string _modName = string.Empty;
 

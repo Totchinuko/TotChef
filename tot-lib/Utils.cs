@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace tot_lib;
 
@@ -78,5 +81,12 @@ public static class Utils
     public static string RemoveRootFolder(this string path, DirectoryInfo root)
     {
         return RemoveRootFolder(path, root.FullName);
+    }
+
+    public static void CreateTot<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>
+        (this RootCommand root, Action<IServiceCollection> serviceConfiguration) where T : class, ITotCommand
+    {
+        root.AddCommand(TotCommand.Create<T>(serviceConfiguration));
     }
 }

@@ -1,54 +1,58 @@
 ﻿using System.CommandLine;
+using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class SwapCommand : ModBasedCommand<SwapCommandOptions, SwapCommandHandler>
+public class SwapCommand : ModBasedCommand, ITotCommand
 {
-    public SwapCommand() : base("swap", "Swap files in the cookinfo.ini")
-    {
-        var optb = new Option<bool>("--exclude", "Swap files to the exclude list");
-        optb.AddAlias("-e");
-        AddOption(optb);
-        optb = new Option<bool>("--recursive", "Include files from subfolder");
-        optb.AddAlias("-r");
-        AddOption(optb);
-        var opts = new Option<bool>("--search-pattern", "Folder filtering, accept * wildcards on file name");
-        opts.AddAlias("-s");
-        AddOption(opts);
-    }
-}
-
-public class SwapCommandOptions : ModBasedCommandOptions
-{
+    public string Command => "swap";
+    public string Description => "Swap files in the cookinfo.ini";
+    
     public bool Exclude { get; set; }
     public string SearchPattern { get; set; } = string.Empty;
     public bool Recursive { get; set; }
-}
 
-public class SwapCommandHandler(IConsole console, KitchenFiles kitchenFiles, KitchenClerk clerk)
-    : ModBasedCommandHandler<SwapCommandOptions>(kitchenFiles)
-{
-    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
-
-    public override async Task<int> HandleAsync(SwapCommandOptions options, CancellationToken cancellationToken)
+    public override IEnumerable<Option> GetOptions()
     {
-        await base.HandleAsync(options, cancellationToken);
+        foreach (var option in base.GetOptions())
+            yield return option;
+        
+        var optb = new TotOption<bool>("--exclude", "Swap files to the exclude list");
+        optb.AddAlias("-e");
+        optb.AddSetter(x => Exclude = x);
+        yield return optb;
+        optb = new TotOption<bool>("--recursive", "Include files from subfolder");
+        optb.AddAlias("-r");
+        optb.AddSetter(x => Recursive = x);
+        yield return optb;
+        var opts = new TotOption<string>("--search-pattern", "Folder filtering, accept * wildcards on file name");
+        opts.AddAlias("-s");
+        opts.AddSetter(x => SearchPattern = x ?? string.Empty);
+        yield return opts;
+    }
 
+    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    {
+        await base.InvokeAsync(provider, token);
+        var kFiles = provider.GetRequiredService<KitchenFiles>();
+        var clerk = provider.GetRequiredService<KitchenClerk>();
+        var console = provider.GetRequiredService<IColoredConsole>();
+        
         try
         {
-            var filter = options.SearchPattern;
+            var filter = SearchPattern;
             if (!string.IsNullOrEmpty(filter) &&
-                !filter.PosixFullName().StartsWith(_kitchenFiles.DevKitContent.PosixFullName()))
-                filter = Path.Join(_kitchenFiles.DevKitContent.FullName, filter);
+                !filter.PosixFullName().StartsWith(kFiles.DevKitContent.PosixFullName()))
+                filter = Path.Join(kFiles.DevKitContent.FullName, filter);
 
             var cookInfo = await clerk.GetCookInfo();
             List<string> added;
 
             if (File.Exists(filter))
             {
-                if (options.Exclude)
+                if (Exclude)
                     added = clerk.SwapFilesInLists([filter.PosixFullName()], cookInfo.Excluded, cookInfo.Included);
                 else
                     added = clerk.SwapFilesInLists([filter.PosixFullName()], cookInfo.Included, cookInfo.Excluded);
@@ -57,9 +61,9 @@ public class SwapCommandHandler(IConsole console, KitchenFiles kitchenFiles, Kit
             {
                 var directory = new DirectoryInfo(filter).GetProperCasedDirectoryInfo();
                 var files = Directory.GetFiles(directory.FullName, $"*{Constants.UAssetExt}",
-                    options.Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).ToList();
+                    Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).ToList();
 
-                if (options.Exclude)
+                if (Exclude)
                     added = clerk.SwapFilesInLists(files, cookInfo.Excluded, cookInfo.Included);
                 else
                     added = clerk.SwapFilesInLists(files, cookInfo.Included, cookInfo.Excluded);
@@ -71,9 +75,9 @@ public class SwapCommandHandler(IConsole console, KitchenFiles kitchenFiles, Kit
                     throw CommandCode.NotFound(fileInfo);
                 var files = Directory.GetFiles(fileInfo.Directory.FullName,
                     filter.Substring(fileInfo.Directory.FullName.Length + 1),
-                    options.Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).ToList();
+                    Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).ToList();
 
-                if (options.Exclude)
+                if (Exclude)
                     added = clerk.SwapFilesInLists(files, cookInfo.Excluded, cookInfo.Included);
                 else
                     added = clerk.SwapFilesInLists(files, cookInfo.Included, cookInfo.Excluded);
@@ -86,7 +90,7 @@ public class SwapCommandHandler(IConsole console, KitchenFiles kitchenFiles, Kit
             await clerk.SetCookInfo(cookInfo);
 
             foreach (var addedFile in added)
-                console.WriteLine(options.Exclude ? "-" : "+" + addedFile);
+                console.WriteLine(Exclude ? "-" : "+" + addedFile);
         }
         catch (CommandException ex)
         {

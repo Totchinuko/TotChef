@@ -1,41 +1,44 @@
 ﻿using System.CommandLine;
+using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class SearchCommand : Command<SearchCommandOptions, SearchCommandHandler>
+public class SearchCommand : ITotCommand, ITotCommandArguments
 {
-    public SearchCommand() : base("search", "Process a mod list to highlight common files")
-    {
-        var opt = new Argument<string>("mod-list", "Path to the mod list");
-        AddArgument(opt);
-        opt = new Argument<string>("search-pattern", "File name pattern to look for");
-        AddArgument(opt);
-    }
-}
-
-public class SearchCommandOptions : ICommandOptions
-{
+    public string Command => "search";
+    public string Description => "Process a mod list to highlight common files";
+    
     public string ModList { get; set; } = string.Empty;
     public string SearchPattern { get; set; } = string.Empty;
-}
-
-public class SearchCommandHandler(IConsole console, KitchenClerk clerk) : ICommandOptionsHandler<SearchCommandOptions>
-{
-    public async Task<int> HandleAsync(SearchCommandOptions options, CancellationToken cancellationToken)
+    
+    public IEnumerable<Argument> GetArguments()
     {
+        var opt = new TotArgument<string>("mod-list", "Path to the mod list");
+        opt.AddSetter(x => ModList = x ?? string.Empty );
+        yield return opt;
+        opt = new TotArgument<string>("search-pattern", "File name pattern to look for");
+        opt.AddSetter(x => SearchPattern = x ?? string.Empty);
+        yield return opt;
+    }
+    
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    {
+        var console = provider.GetRequiredService<IColoredConsole>();
+        var clerk = provider.GetRequiredService<KitchenClerk>();
+        
         try
         {
             List<string> modlist;
-            if (File.Exists(options.ModList))
+            if (File.Exists(ModList))
             {
-                var modlistFile = new FileInfo(options.ModList).GetProperCasedFileInfo();
-                modlist = (await File.ReadAllLinesAsync(modlistFile.FullName, cancellationToken)).ToList();
+                var modlistFile = new FileInfo(ModList).GetProperCasedFileInfo();
+                modlist = (await File.ReadAllLinesAsync(modlistFile.FullName, token)).ToList();
             }
-            else if (Directory.Exists(options.ModList))
+            else if (Directory.Exists(ModList))
             {
-                modlist = Directory.GetFiles(options.ModList, "*.pak", SearchOption.AllDirectories).ToList();
+                modlist = Directory.GetFiles(ModList, "*.pak", SearchOption.AllDirectories).ToList();
             }
             else
             {
@@ -63,7 +66,7 @@ public class SearchCommandHandler(IConsole console, KitchenClerk clerk) : IComma
 
             foreach (var listing in listings)
             foreach (var pakedFile in listing.pakedFiles)
-                if (pakedFile.path.Contains(options.SearchPattern))
+                if (pakedFile.path.Contains(SearchPattern))
                     console.WriteLine(listing.pakName);
         }
         catch (CommandException ex)

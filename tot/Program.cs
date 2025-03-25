@@ -1,4 +1,5 @@
-﻿using System.CommandLine.Builder;
+﻿using System.CommandLine;
+using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
@@ -9,20 +10,38 @@ namespace Tot;
 
 internal class Program
 {
-    private static int Main(string[] args)
+    static async Task<int> Main(string[] args)
     {
-        var builder = new CommandLineBuilder().UseDefaults().UseDependencyInjection(services =>
-        {
-            services.AddSingleton(Config.LoadConfig());
-            services.AddSingleton<GitHandler>();
-            services.AddSingleton<KitchenFiles>();
-            services.AddSingleton<KitchenClerk>();
+        var rootCommand = new RootCommand("Conan Exile Modding Cli");
+        rootCommand.CreateTot<CheckoutCommand>(ConfigureServices);
+        rootCommand.CreateTot<CleanCommand>(ConfigureServices);
+        rootCommand.CreateTot<ConfigCommand>(ConfigureServices);
+        rootCommand.CreateTot<ConflictCommand>(ConfigureServices);
+        rootCommand.CreateTot<CookCommand>(ConfigureServices);
+        rootCommand.CreateTot<DescriptionCommand>(ConfigureServices);
+        rootCommand.CreateTot<DevKitCommand>(ConfigureServices);
+        rootCommand.CreateTot<GhostCommand>(ConfigureServices);
+        rootCommand.CreateTot<ListCommand>(ConfigureServices);
+        rootCommand.CreateTot<OpenCommand>(ConfigureServices);
+        rootCommand.CreateTot<PakCommand>(ConfigureServices);
+        rootCommand.CreateTot<PathCommand>(ConfigureServices);
+        rootCommand.CreateTot<SearchCommand>(ConfigureServices);
+        rootCommand.CreateTot<StatusCommand>(ConfigureServices);
+        rootCommand.CreateTot<SwapCommand>(ConfigureServices);
+        rootCommand.CreateTot<SwitchCommand>(ConfigureServices);
+        rootCommand.CreateTot<ValidateCommand>(ConfigureServices);
+        rootCommand.CreateTot<VersionCommand>(ConfigureServices);
+        
+        return await rootCommand.InvokeAsync(args);
+    }
 
-            services.AddTransient<CheckoutCommand>();
-            services.AddTransient<CleanCommand>();
-            services.AddTransient<ConfigCommand>();
-        });
-
-        return builder.Build().Invoke(args);
+    static void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<IColoredConsole>(Console.IsOutputRedirected ? new ColorlessConsole() : new DotnetConsole());
+        services.AddSingleton(Config.LoadConfig());
+        services.AddSingleton<KitchenFiles>();
+        services.AddSingleton<KitchenClerk>();
+        services.AddSingleton<GitHandler>();
+        services.AddSingleton<Stove>();
     }
 }

@@ -1,41 +1,30 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot;
 
-public class ModBasedCommand<
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-    TOptions,
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-    TOptionsHandler> :
-    Command<TOptions, TOptionsHandler>
-    where TOptions : ModBasedCommandOptions, new()
-    where TOptionsHandler : ModBasedCommandHandler<TOptions>
+public class ModBasedCommand : ITotCommandInvoked, ITotCommandOptions
 {
-    public ModBasedCommand(string verb, string description) : base(verb, description)
+    public string ConanMod { get; protected set; } = string.Empty;
+    
+    public virtual IEnumerable<Option> GetOptions()
     {
-        var option = new Option<string>("--conan-mod",
+        var option = new TotOption<string>("--conan-mod",
             "Specify the mod name you want to perform the action on");
         option.AddAlias("-m");
-        AddOption(option);
+        option.AddSetter(v => ConanMod = v ?? string.Empty);
+        yield return option;
     }
-}
 
-public class ModBasedCommandOptions : ICommandOptions
-{
-    public string ConanMod { get; set; } = string.Empty;
-}
-
-public class ModBasedCommandHandler<
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-    TOptions>(KitchenFiles kitchenFiles) : ICommandOptionsHandler<TOptions>
-    where TOptions : ModBasedCommandOptions, new()
-{
-    public virtual Task<int> HandleAsync(TOptions options, CancellationToken cancellationToken)
+    public virtual Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        kitchenFiles.SetModName(options.ConanMod);
+        var kitchenFiles =provider.GetRequiredService<KitchenFiles>();
+        
+        kitchenFiles.SetModName(ConanMod);
         if (!kitchenFiles.IsDevkitPathValid())
             throw CommandCode.NotFound(kitchenFiles.DevKit);
         if (!kitchenFiles.IsModPathValid())

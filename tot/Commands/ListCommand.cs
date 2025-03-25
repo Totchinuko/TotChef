@@ -1,26 +1,21 @@
 ﻿using System.CommandLine;
+using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class ListCommand : Command<ListCommandOptions, ListCommandHandler>
+public class ListCommand : ITotCommand
 {
-    public ListCommand() : base("list", "List the mods available in the DevKit")
-    {
-    }
-}
+    public string Command => "list";
+    public string Description => "List the mods available in the DevKit";
 
-public class ListCommandOptions : ICommandOptions
-{
-}
-
-public class ListCommandHandler(IConsole console, KitchenFiles kitchenFiles)
-    : ICommandOptionsHandler<ListCommandOptions>
-{
-    public Task<int> HandleAsync(ListCommandOptions options, CancellationToken cancellationToken)
+    public Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        foreach (var directory in kitchenFiles.ModsFolder.GetDirectories())
+        var console = provider.GetRequiredService<IColoredConsole>();
+        var kFiles = provider.GetRequiredService<KitchenFiles>();
+        
+        foreach (var directory in kFiles.ModsFolder.GetDirectories())
             console.WriteLine(directory.Name);
         return Task.FromResult(0);
     }

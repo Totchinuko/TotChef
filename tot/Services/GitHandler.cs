@@ -4,7 +4,7 @@ using Tot;
 
 namespace tot.Services;
 
-public class GitHandler(Config config, KitchenFiles files)
+public class GitHandler(Config config, KitchenFiles files) : ITotService
 {
     public void CommitFile(DirectoryInfo directory, FileInfo file, string message)
     {

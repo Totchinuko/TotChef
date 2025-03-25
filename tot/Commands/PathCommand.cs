@@ -1,54 +1,56 @@
 ﻿using System.CommandLine;
+using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class PathCommand : ModBasedCommand<PathCommandOptions, PathCommandHandler>
+public class PathCommand : ModBasedCommand, ITotCommand
 {
-    public PathCommand() : base("path", "Return a path to be used with cd")
-    {
-        var opt = new Option<bool>("--mods-shared", "Return the path to the shared folder");
-        opt.AddAlias("-s");
-        AddOption(opt);
-        opt = new Option<bool>("--pak-file", "Return the path to the cooked pak file");
-        opt.AddAlias("-p");
-        AddOption(opt);
-    }
-}
-
-public class PathCommandOptions : ModBasedCommandOptions
-{
+    public string Command => "path";
+    public string Description => "Return a path to be used with cd";
+    
     public bool ModsShared { get; set; }
     public bool PakFile { get; set; }
-}
 
-public class PathCommandHandler(IConsole console, KitchenFiles kitchenFiles)
-    : ModBasedCommandHandler<PathCommandOptions>(kitchenFiles)
-{
-    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
-
-    public override async Task<int> HandleAsync(PathCommandOptions options, CancellationToken cancellationToken)
+    public override IEnumerable<Option> GetOptions()
     {
-        await base.HandleAsync(options, cancellationToken);
+        foreach (var option in base.GetOptions())
+            yield return option;
+        var opt = new TotOption<bool>("--mods-shared", "Return the path to the shared folder");
+        opt.AddAlias("-s");
+        opt.AddSetter(x => ModsShared = x);
+        yield return opt;
+        
+        opt = new TotOption<bool>("--pak-file", "Return the path to the cooked pak file");
+        opt.AddAlias("-p");
+        opt.AddSetter(x => PakFile = x);
+        yield return opt;
+    }
 
+    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    {
+        await base.InvokeAsync(provider, token);
+        var kFiles = provider.GetRequiredService<KitchenFiles>();
+        var console = provider.GetRequiredService<IColoredConsole>();
+        
         try
         {
             var path = "";
-            if (!string.IsNullOrEmpty(_kitchenFiles.ModName))
+            if (!string.IsNullOrEmpty(kFiles.ModName))
             {
-                if (!_kitchenFiles.IsModPathValid())
-                    throw CommandCode.NotFound(_kitchenFiles.ModFolder);
-                path = _kitchenFiles.ModFolder.PosixFullName();
+                if (!kFiles.IsModPathValid())
+                    throw CommandCode.NotFound(kFiles.ModFolder);
+                path = kFiles.ModFolder.PosixFullName();
             }
             else
             {
-                if (options.ModsShared)
-                    path = _kitchenFiles.ModsShared.PosixFullName();
-                else if (options.PakFile)
-                    path = _kitchenFiles.ModPakFile.PosixFullName();
+                if (ModsShared)
+                    path = kFiles.ModsShared.PosixFullName();
+                else if (PakFile)
+                    path = kFiles.ModPakFile.PosixFullName();
                 else
-                    throw CommandCode.MissingArg(nameof(options.ConanMod));
+                    throw CommandCode.MissingArg(nameof(ConanMod));
             }
 
             console.Write(path);
@@ -61,3 +63,4 @@ public class PathCommandHandler(IConsole console, KitchenFiles kitchenFiles)
         return 0;
     }
 }
+

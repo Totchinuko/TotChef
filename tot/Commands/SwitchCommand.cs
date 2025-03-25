@@ -1,34 +1,26 @@
 ﻿using System.CommandLine;
+using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class SwitchCommand : ModBasedCommand<SwitchCommandOptions, SwitchCommandHandler>
+public class SwitchCommand : ModBasedCommand, ITotCommand
 {
-    public SwitchCommand() : base("switch", "Switch the active.txt to the selected mod")
+    public string Command => "switch";
+    public string Description => "Switch the active.txt to the selected mod";
+
+    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-    }
-}
-
-public class SwitchCommandOptions : ModBasedCommandOptions
-{
-}
-
-public class SwitchCommandHandler(IConsole console, KitchenFiles kitchenFiles)
-    : ModBasedCommandHandler<SwitchCommandOptions>(kitchenFiles)
-{
-    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
-
-    public override async Task<int> HandleAsync(SwitchCommandOptions options, CancellationToken cancellationToken)
-    {
-        await base.HandleAsync(options, cancellationToken);
-
+        await base.InvokeAsync(provider, token);
+        var kFiles = provider.GetRequiredService<KitchenFiles>();
+        var console = provider.GetRequiredService<IColoredConsole>();
+        
         try
         {
-            _kitchenFiles.DeleteAnyActive();
-            _kitchenFiles.CreateActive();
-            console.WriteLine($"{_kitchenFiles.ModName} is now active");
+            kFiles.DeleteAnyActive();
+            kFiles.CreateActive();
+            console.WriteLine($"{kFiles.ModName} is now active");
         }
         catch (CommandException ex)
         {

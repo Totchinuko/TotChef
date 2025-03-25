@@ -1,34 +1,29 @@
 ﻿using System.CommandLine;
 using System.Diagnostics;
+using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class DescriptionCommand : ModBasedCommand<DescriptionCommandOptions, DescriptionCommandHandler>
+public class DescriptionCommand : ModBasedCommand, ITotCommand
 {
-    public DescriptionCommand() : base("description", "Edit the mod description")
+    public string Command => "description";
+    public string Description => "Edit the mod description";
+
+    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken cancellationToken)
     {
-    }
-}
-
-public class DescriptionCommandOptions : ModBasedCommandOptions
-{
-}
-
-public class DescriptionCommandHandler(Config config, IConsole console, GitHandler git, KitchenFiles kitchenFiles)
-    : ModBasedCommandHandler<DescriptionCommandOptions>(kitchenFiles)
-{
-    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
-
-    public override async Task<int> HandleAsync(DescriptionCommandOptions options, CancellationToken cancellationToken)
-    {
-        await base.HandleAsync(options, cancellationToken);
-
+        await base.InvokeAsync(provider, cancellationToken);
+        var kFiles = provider.GetRequiredService<KitchenFiles>();
+        var config = provider.GetRequiredService<Config>();
+        var console = provider.GetRequiredService<IColoredConsole>();
+        var git = provider.GetRequiredService<GitHandler>();
+        
         try
         {
-            var modInfos = await _kitchenFiles.GetModInfos();
-            var tmpFile = await _kitchenFiles.CreateTemporaryTextFile(modInfos.Description);
+            var modInfos = await kFiles.GetModInfos();
+            var tmpFile = await kFiles.CreateTemporaryTextFile(modInfos.Description);
             using (var fileOpener = new Process())
             {
                 fileOpener.StartInfo.FileName = config.DefaultCliEditor;
@@ -45,8 +40,8 @@ public class DescriptionCommandHandler(Config config, IConsole console, GitHandl
 
             modInfos.Description = description;
             console.WriteLine("Commiting changes");
-            await _kitchenFiles.SetModInfos(modInfos);
-            git.CommitFile(_kitchenFiles.ModFolder, _kitchenFiles.ModCookInfo, "Update mod description");
+            await kFiles.SetModInfos(modInfos);
+            git.CommitFile(kFiles.ModFolder, kFiles.ModCookInfo, "Update mod description");
         }
         catch (CommandException ex)
         {

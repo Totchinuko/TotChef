@@ -1,40 +1,33 @@
 ﻿using System.CommandLine;
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class DevKitCommand : ModBasedCommand<DevKitCommandOptions, DevKitCommandHandler>
+public class DevKitCommand : ModBasedCommand, ITotCommand
 {
-    public DevKitCommand() : base("devkit", "Open the devkit for the targeted mod")
+    public string Command => "devkit";
+    public string Description => "Open the devkit for the targeted mod";
+
+    public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-    }
-}
-
-public class DevKitCommandOptions : ModBasedCommandOptions
-{
-}
-
-public class DevKitCommandHandler(IConsole console, KitchenFiles kitchenFiles, GitHandler git)
-    : ModBasedCommandHandler<DevKitCommandOptions>(kitchenFiles)
-{
-    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
-
-    public override async Task<int> HandleAsync(DevKitCommandOptions options, CancellationToken cancellationToken)
-    {
-        await base.HandleAsync(options, cancellationToken);
-
+        await base.InvokeAsync(provider, token);
+        var git = provider.GetRequiredService<GitHandler>();
+        var console = provider.GetRequiredService<IColoredConsole>();
+        var kFiles = provider.GetRequiredService<KitchenFiles>();
+        
         try
         {
             git.CheckoutModsSharedBranch(out var branch);
             console.WriteLine($"{branch} branch is now active on Shared repository");
-            _kitchenFiles.DeleteAnyActive();
-            _kitchenFiles.CreateActive();
-            console.WriteLine($"Set {_kitchenFiles.ModName} as active");
+            kFiles.DeleteAnyActive();
+            kFiles.CreateActive();
+            console.WriteLine($"Set {kFiles.ModName} as active");
 
-            Process.Start(_kitchenFiles.Ue4Editor.FullName,
-                string.Join(" ", _kitchenFiles.UProject.FullName, string.Join(" ", Constants.EditorArgs)));
+            Process.Start(kFiles.Ue4Editor.FullName,
+                string.Join(" ", kFiles.UProject.FullName, string.Join(" ", Constants.EditorArgs)));
         }
         catch (CommandException ex)
         {

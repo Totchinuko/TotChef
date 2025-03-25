@@ -10,7 +10,7 @@ public partial class ConfigJsonContext : JsonSerializerContext
 {
 }
 
-public class Config
+public class Config : ITotService
 {
     private const string ConfigFileName = "Tot.json";
 

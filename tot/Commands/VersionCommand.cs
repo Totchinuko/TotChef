@@ -1,38 +1,37 @@
 ﻿using System.CommandLine;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class BumpCommand : ModBasedCommand<BumpCommandOptions, BumpCommandHandler>
+public partial class VersionCommand : ModBasedCommand, ITotCommand, ITotCommandArguments
 {
-    public BumpCommand() : base("bump", "Bump a mod version")
+    public string VersionPart { get; protected set; } = string.Empty;
+    
+    public string Command => "version";
+    public string Description => "Handle mod version modification and display";
+    
+    public IEnumerable<Argument> GetArguments()
     {
-        var arg = new Argument<string>("version-part", "Part of the version to bump (major.minor.build)");
+        var arg = new TotArgument<string>("version-part", "Part of the version to bump (major.minor.build)");
         arg.SetDefaultValue("build");
-        AddArgument(arg);
+        arg.AddSetter(v => VersionPart = v ?? string.Empty);
+        yield return arg;
     }
-}
-
-public class BumpCommandOptions : ModBasedCommandOptions
-{
-    public string VersionPart { get; set; } = "build";
-}
-
-public partial class BumpCommandHandler(IConsole console, KitchenFiles kitchenFiles, GitHandler git)
-    : ModBasedCommandHandler<BumpCommandOptions>(kitchenFiles)
-{
-    private readonly KitchenFiles _kitchenFiles = kitchenFiles;
-
-    public override async Task<int> HandleAsync(BumpCommandOptions options, CancellationToken cancellationToken)
+    
+    public override async Task<int> InvokeAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
-        await base.HandleAsync(options, cancellationToken);
+        await base.InvokeAsync(services, cancellationToken);
+        var kitchenFiles = services.GetRequiredService<KitchenFiles>();
+        var git = services.GetRequiredService<GitHandler>();
+        var console = services.GetRequiredService<IColoredConsole>();
 
         try
         {
-            var modInfos = await _kitchenFiles.GetModInfos();
-            switch (options.VersionPart)
+            var modInfos = await kitchenFiles.GetModInfos();
+            switch (VersionPart)
             {
                 case "major":
                     modInfos.VersionMajor++;
@@ -54,8 +53,8 @@ public partial class BumpCommandHandler(IConsole console, KitchenFiles kitchenFi
             modInfos.Name = regex.Replace(modInfos.Name,
                 $"{modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
             console.WriteLine(modInfos.Name);
-            await _kitchenFiles.SetModInfos(modInfos);
-            git.CommitFile(_kitchenFiles.ModFolder, _kitchenFiles.ModInfo,
+            await kitchenFiles.SetModInfos(modInfos);
+            git.CommitFile(kitchenFiles.ModFolder, kitchenFiles.ModInfo,
                 $"Bump version to {modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
         }
         catch (CommandException ex)
@@ -68,4 +67,7 @@ public partial class BumpCommandHandler(IConsole console, KitchenFiles kitchenFi
 
     [GeneratedRegex(@"([0-9]+)\.([0-9]+)\.([0-9]+)")]
     private static partial Regex TitleVersionRegex();
+
+
+
 }

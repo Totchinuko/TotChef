@@ -1,26 +1,21 @@
 ﻿using System.CommandLine;
 using System.CommandLine.IO;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using tot_lib;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class CheckoutCommand : Command<ModBasedCommandOptions, CheckoutCommandHandler>
+public class CheckoutCommand : ITotCommand
 {
-    public CheckoutCommand() : base("checkout",
-        "Checkout the dedicated mod branch (sharing the same name) in the ModsShared folder")
+    public string Command => "checkout";
+    public string Description => "Checkout the dedicated mod branch (sharing the same name) in the ModsShared folder";
 
+    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken cancellationToken)
     {
-    }
-}
-
-public class CheckoutCommandHandler(IConsole console, GitHandler git, KitchenFiles kitchenFiles)
-    : ModBasedCommandHandler<ModBasedCommandOptions>(kitchenFiles)
-{
-    public override async Task<int> HandleAsync(ModBasedCommandOptions options, CancellationToken cancellationToken)
-    {
-        await base.HandleAsync(options, cancellationToken);
-
+        var git = provider.GetRequiredService<GitHandler>();
+        var console = provider.GetRequiredService<IColoredConsole>();
 
         if (!git.IsModsSharedRepositoryValid())
         {
