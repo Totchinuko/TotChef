@@ -2,17 +2,18 @@
 using System.CommandLine.IO;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using tot_lib;
 using tot.Services;
 
 namespace Tot;
 
 public class Stove
 {
-    private readonly IConsole _console;
+    private readonly IColoredConsole _console;
     private readonly Process _process;
     private bool _verbose;
 
-    public Stove(KitchenFiles kitchenFiles, IConsole console)
+    public Stove(KitchenFiles kitchenFiles, IColoredConsole console)
     {
         _console = console;
         _process = new Process();

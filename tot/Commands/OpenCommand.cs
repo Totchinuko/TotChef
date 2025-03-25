@@ -13,7 +13,7 @@ public class OpenCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        var console = provider.GetRequiredService<IConsole>();
+        var console = provider.GetRequiredService<IColoredConsole>();
         
         try
         {

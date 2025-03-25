@@ -8,7 +8,7 @@ using Tot;
 
 namespace tot.Services;
 
-public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, IConsole console) : ITotService
+public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, IColoredConsole console) : ITotService
 {
     public void CleanCookedFolder()
     {
