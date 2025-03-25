@@ -35,12 +35,18 @@ public class Stove
     public int Errors { get; private set; }
     public int Warnings { get; private set; }
 
-    public void StartCooking(bool verbose = false)
+    public async Task StartCooking(CancellationToken cancellationToken, bool verbose = false)
     {
         _verbose = verbose;
         _process.Start();
         _process.BeginOutputReadLine();
-        _process.WaitForExit();
+        await _process.WaitForExitAsync(cancellationToken);
+        if (!_process.HasExited)
+        {
+            _process.Kill();
+            WasSuccess = false;
+            return;
+        }
         WasSuccess = _process.ExitCode == 0;
     }
 

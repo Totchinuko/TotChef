@@ -70,7 +70,7 @@ public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
             clerk.CleanCookingFolder();
             console.WriteLine($"Cooking:Cooking {kFiles.ModName}...");
 
-            stove.StartCooking(Verbose);
+            await stove.StartCooking(cancellationToken, Verbose);
             if (!stove.WasSuccess)
                 throw new CommandException(CommandCode.CookingFailure, $"Cooking failed. {stove.Errors} Error(s)");
 
