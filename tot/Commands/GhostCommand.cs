@@ -24,25 +24,34 @@ public class GhostCommand : ModBasedCommand, ITotCommand, ITotCommandOptions
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        await base.InvokeAsync(provider, token);
         var console = provider.GetRequiredService<IColoredConsole>();
         var kFiles = provider.GetRequiredService<KitchenFiles>();
-        
-        List<string> files = Directory.GetFiles(kFiles.ModFolder.FullName, "*.*", SearchOption.AllDirectories)
-            .ToList();
 
-        console.WriteLine("Invalid files:");
-        foreach (var file in files)
+        try
         {
-            var info = new FileInfo(file);
-            if (info.Extension != Constants.UAssetExt && info.Extension != Constants.UMapExt) continue;
-            if (info.Length >= 4 * 1024) continue;
-            var contain = await kFiles.FileContain(info, "ObjectRedirector");
-            if (!contain && info.Length >= 1024) continue;
-            console.WriteLine($"{file}");
-            if (Cleanup)
-                info.Delete();
+            await base.InvokeAsync(provider, token);
+
+            List<string> files = Directory.GetFiles(kFiles.ModFolder.FullName, "*.*", SearchOption.AllDirectories)
+                .ToList();
+
+            console.WriteLine("Invalid files:");
+            foreach (var file in files)
+            {
+                var info = new FileInfo(file);
+                if (info.Extension != Constants.UAssetExt && info.Extension != Constants.UMapExt) continue;
+                if (info.Length >= 4 * 1024) continue;
+                var contain = await kFiles.FileContain(info, "ObjectRedirector");
+                if (!contain && info.Length >= 1024) continue;
+                console.WriteLine($"{file}");
+                if (Cleanup)
+                    info.Delete();
+            }
         }
+        catch(CommandException ex)
+        {
+            return await console.OutputCommandError(ex);
+        }
+        
 
         return 0;
     }

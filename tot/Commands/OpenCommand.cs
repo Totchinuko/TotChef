@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.CommandLine;
+using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
@@ -12,8 +13,17 @@ public class OpenCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        await base.InvokeAsync(provider, token);
-        Process.Start("explorer.exe", provider.GetRequiredService<KitchenFiles>().ModPakFolder.FullName);
-        return 0;
+        var console = provider.GetRequiredService<IConsole>();
+        
+        try
+        {
+            await base.InvokeAsync(provider, token);
+            Process.Start("explorer.exe", provider.GetRequiredService<KitchenFiles>().ModPakFolder.FullName);
+            return 0;
+        }
+        catch (CommandException ex)
+        {
+            return await console.OutputCommandError(ex);
+        }
     }
 }

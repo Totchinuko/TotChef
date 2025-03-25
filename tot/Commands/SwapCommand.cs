@@ -35,13 +35,14 @@ public class SwapCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        await base.InvokeAsync(provider, token);
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         var clerk = provider.GetRequiredService<KitchenClerk>();
         var console = provider.GetRequiredService<IColoredConsole>();
         
         try
         {
+            await base.InvokeAsync(provider, token);
+
             var filter = SearchPattern;
             if (!string.IsNullOrEmpty(filter) &&
                 !filter.PosixFullName().StartsWith(kFiles.DevKitContent.PosixFullName()))

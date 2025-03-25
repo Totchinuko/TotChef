@@ -6,7 +6,7 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class ConflictCommand : ITotCommand, ITotCommandArguments
+public class ConflictCommand : ITotCommand, ITotCommandArguments, ITotCommandInvoked
 {
     public string Path { get; set; } = string.Empty;
     

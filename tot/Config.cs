@@ -42,6 +42,7 @@ public class Config : ITotService
             }
             catch
             {
+                return new Config();
             }
 
         if (string.IsNullOrEmpty(json))
@@ -54,7 +55,6 @@ public class Config : ITotService
 
     public void SaveConfig()
     {
-        var option = new JsonSerializerOptions { WriteIndented = true };
         var json = JsonSerializer.Serialize(this, ConfigJsonContext.Default.Config);
         var configPath = GetConfigPath() ?? "";
         File.WriteAllText(configPath, json);

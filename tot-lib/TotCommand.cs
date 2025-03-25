@@ -13,7 +13,6 @@ public sealed class TotCommand : Command
     
     private TotCommand(ITotCommand command, Action<IServiceCollection> configureServices) : base(command.Command, command.Description)
     {
-        this.SetHandler(BaseHandlerAsync);
         _command = command;
         var services = new ServiceCollection();
         services.TryAddSingleton<IColoredConsole>(new DotnetConsole());
@@ -29,6 +28,9 @@ public sealed class TotCommand : Command
         if(_command is ITotCommandSubCommands subCommands)
             foreach (var c in subCommands.GetSubCommands())
                  AddCommand(new TotCommand(c, configureServices));
+        
+        if(_command is ITotCommandInvoked invoked)
+            this.SetHandler(BaseHandlerAsync);
     }
 
     private Task<int> BaseHandlerAsync(InvocationContext context)
@@ -40,10 +42,12 @@ public sealed class TotCommand : Command
             if(arg is IValueSymbol valueSymbol)
                 valueSymbol.SetValue(context);
         
-        return _command.InvokeAsync(_provider, context.GetCancellationToken());
+        return ((ITotCommandInvoked)_command).InvokeAsync(_provider, context.GetCancellationToken());
     }
 
-    public static TotCommand Create<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]T>(Action<IServiceCollection> configureService) where T : class, ITotCommand
+    public static TotCommand Create<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]T>
+        (Action<IServiceCollection> configureService) where T : class, ITotCommand
     {
         return new TotCommand(Activator.CreateInstance<T>(), configureService);
     }

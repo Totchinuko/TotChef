@@ -5,7 +5,7 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class ListCommand : ITotCommand
+public class ListCommand : ITotCommand, ITotCommandInvoked
 {
     public string Command => "list";
     public string Description => "List the mods available in the DevKit";

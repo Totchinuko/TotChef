@@ -30,12 +30,13 @@ public class StatusCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        await base.InvokeAsync(provider, token);
         var console = provider.GetRequiredService<IColoredConsole>();
         var clerk = provider.GetRequiredService<KitchenClerk>();
         
         try
         {
+            await base.InvokeAsync(provider, token);
+
             if (Raw)
             {
                 await ExecuteRawList(clerk, console);
@@ -159,13 +160,13 @@ public class StatusCommand : ModBasedCommand, ITotCommand
             if (!string.IsNullOrEmpty(filter))
             {
                 if (includedDir.TryGetValue(dir, out var value4))
-                    console.WriteLine(ConsoleColor.Green, [.. value4]);
+                    console.WriteLines(ConsoleColor.Green, [.. value4]);
                 if (excludedDir.TryGetValue(dir, out var value5))
-                    console.WriteLine(ConsoleColor.Red, [.. value5]);
+                    console.WriteLines(ConsoleColor.Red, [.. value5]);
                 if (absentDir.TryGetValue(dir, out var value6))
-                    console.WriteLine(ConsoleColor.Yellow, [.. value6]);
+                    console.WriteLines(ConsoleColor.Yellow, [.. value6]);
                 if (notFounDir.TryGetValue(dir, out var value7))
-                    console.WriteLine(ConsoleColor.Magenta, [.. value7]);
+                    console.WriteLines(ConsoleColor.Magenta, [.. value7]);
             }
         }
     }

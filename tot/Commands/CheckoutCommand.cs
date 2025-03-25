@@ -7,7 +7,7 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class CheckoutCommand : ITotCommand
+public class CheckoutCommand : ITotCommand, ITotCommandInvoked
 {
     public string Command => "checkout";
     public string Description => "Checkout the dedicated mod branch (sharing the same name) in the ModsShared folder";

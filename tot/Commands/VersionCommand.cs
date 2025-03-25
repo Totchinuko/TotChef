@@ -23,13 +23,14 @@ public partial class VersionCommand : ModBasedCommand, ITotCommand, ITotCommandA
     
     public override async Task<int> InvokeAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
-        await base.InvokeAsync(services, cancellationToken);
         var kitchenFiles = services.GetRequiredService<KitchenFiles>();
         var git = services.GetRequiredService<GitHandler>();
         var console = services.GetRequiredService<IColoredConsole>();
 
         try
         {
+            await base.InvokeAsync(services, cancellationToken);
+
             var modInfos = await kitchenFiles.GetModInfos();
             switch (VersionPart)
             {

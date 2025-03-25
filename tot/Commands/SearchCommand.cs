@@ -5,7 +5,7 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class SearchCommand : ITotCommand, ITotCommandArguments
+public class SearchCommand : ITotCommand, ITotCommandArguments, ITotCommandInvoked
 {
     public string Command => "search";
     public string Description => "Process a mod list to highlight common files";

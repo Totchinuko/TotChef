@@ -30,24 +30,25 @@ public class CookCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken cancellationToken)
     {
-        await base.InvokeAsync(provider, cancellationToken);
         var git = provider.GetRequiredService<GitHandler>();
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         var console = provider.GetRequiredService<IColoredConsole>();
         var stove = provider.GetRequiredService<Stove>();
         var clerk = provider.GetRequiredService<KitchenClerk>();
 
-        if (git.IsGitRepoDirty(kFiles.ModsShared) && !Force)
-            return await console.OutputCommandError(CommandCode.RepositoryIsDirty, "Cooking:ModsShared repo is dirty");
-        if (git.IsGitRepoDirty(kFiles.ModFolder) && !Force)
-            return await console.OutputCommandError(CommandCode.RepositoryIsDirty,
-                $"Cooking:Mod {kFiles.ModName} repo is dirty");
-        if (!git.IsModsSharedBranchValid())
-            return await console.OutputCommandError(CommandCode.RepositoryWrongBranch,
-                "Cooking:Dedicated ModsShared branch is not checked out");
-
         try
         {
+            await base.InvokeAsync(provider, cancellationToken);
+
+            if (git.IsGitRepoDirty(kFiles.ModsShared) && !Force)
+                throw new CommandException(CommandCode.RepositoryIsDirty, "Cooking:ModsShared repo is dirty");
+            if (git.IsGitRepoDirty(kFiles.ModFolder) && !Force)
+                throw new CommandException(CommandCode.RepositoryIsDirty,
+                    $"Cooking:Mod {kFiles.ModName} repo is dirty");
+            if (!git.IsModsSharedBranchValid())
+                throw new CommandException(CommandCode.RepositoryWrongBranch,
+                    "Cooking:Dedicated ModsShared branch is not checked out");
+            
             kFiles.DeleteAnyActive();
             kFiles.CreateActive();
             console.WriteLine($"Cooking:{kFiles.ModName} is now active");

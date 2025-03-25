@@ -24,13 +24,13 @@ public class PakCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        await base.InvokeAsync(provider, token);
         var kFile = provider.GetRequiredService<KitchenFiles>();
         var console = provider.GetRequiredService<IColoredConsole>();
         
-        
         try
         {
+            await base.InvokeAsync(provider, token);
+
             kFile.CreateModPakBackup();
             foreach (var file in kFile.ModFolder.GetFiles())
                 if (!file.Name.StartsWith(".") && file.Name != "active.txt")

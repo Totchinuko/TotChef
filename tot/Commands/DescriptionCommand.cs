@@ -14,7 +14,6 @@ public class DescriptionCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken cancellationToken)
     {
-        await base.InvokeAsync(provider, cancellationToken);
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         var config = provider.GetRequiredService<Config>();
         var console = provider.GetRequiredService<IColoredConsole>();
@@ -22,6 +21,8 @@ public class DescriptionCommand : ModBasedCommand, ITotCommand
         
         try
         {
+            await base.InvokeAsync(provider, cancellationToken);
+
             var modInfos = await kFiles.GetModInfos();
             var tmpFile = await kFiles.CreateTemporaryTextFile(modInfos.Description);
             using (var fileOpener = new Process())

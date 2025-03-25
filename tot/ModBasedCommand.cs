@@ -16,17 +16,19 @@ public class ModBasedCommand : ITotCommandInvoked, ITotCommandOptions
         var option = new TotOption<string>("--conan-mod",
             "Specify the mod name you want to perform the action on");
         option.AddAlias("-m");
+        option.SetDefaultValue(string.Empty);
         option.AddSetter(v => ConanMod = v ?? string.Empty);
         yield return option;
     }
 
     public virtual Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        var kitchenFiles =provider.GetRequiredService<KitchenFiles>();
+        var kitchenFiles = provider.GetRequiredService<KitchenFiles>();
         
         kitchenFiles.SetModName(ConanMod);
         if (!kitchenFiles.IsDevkitPathValid())
-            throw CommandCode.NotFound(kitchenFiles.DevKit);
+            throw new CommandException(CommandCode.DirectoryNotFound,
+                "Devkit directory could not be found, make sure the configuration is correct");
         if (!kitchenFiles.IsModPathValid())
             throw CommandCode.NotFound(kitchenFiles.ModFolder);
 

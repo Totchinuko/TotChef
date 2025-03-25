@@ -4,15 +4,14 @@ namespace tot_lib;
 
 public static class ConsoleExtensions
 {
-    public static void Write(this IColoredConsole console, ConsoleColor foregroundColor, params string[] output)
+    public static void Write(this IColoredConsole console, ConsoleColor foregroundColor, string output)
     {
         console.ForegroundColor = foregroundColor;
-        foreach (var o in output)
-            console.Write(o);
+        console.Write(output);
         console.ResetColor();
     }
     
-    public static void WriteLine(this IColoredConsole console, ConsoleColor foregroundColor, params string[] output)
+    public static void WriteLines(this IColoredConsole console, ConsoleColor foregroundColor, params string[] output)
     {
         console.ForegroundColor = foregroundColor;
         foreach (var o in output)
@@ -20,25 +19,7 @@ public static class ConsoleExtensions
         console.ResetColor();
     }
     
-    public static void Write(this IConsole console, string prefix, params string[] output)
-    {
-        foreach (var o in output)
-            console.Write(o);
-    }
-    
-    public static void WriteLine(this IConsole console, string prefix, params string[] output)
-    {
-        foreach (var o in output)
-            console.WriteLine(o);
-    }
-    
-    public static void Write(this IConsole console, params string[] output)
-    {
-        foreach (var o in output)
-            console.Write(o);
-    }
-    
-    public static void WriteLine(this IConsole console, params string[] output)
+    public static void WriteLines(this IConsole console, params string[] output)
     {
         foreach (var o in output)
             console.WriteLine(o);

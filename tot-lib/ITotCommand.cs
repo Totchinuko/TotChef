@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace tot_lib;
 
-public interface ITotCommand : ITotCommandInvoked
+public interface ITotCommand
 {
     string Command { get; }
     string Description { get; }

@@ -13,13 +13,14 @@ public class CleanCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        await base.InvokeAsync(provider, token);
         var clerk = provider.GetRequiredService<KitchenClerk>();
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         var console = provider.GetRequiredService<IColoredConsole>();
 
         try
         {
+            await base.InvokeAsync(provider, token);
+            
             var cookInfos = await clerk.GetCookInfo();
             var changes = clerk.RemoveMissingFiles(cookInfos);
             await clerk.SetCookInfo(cookInfos);

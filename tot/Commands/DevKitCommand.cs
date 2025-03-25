@@ -13,13 +13,14 @@ public class DevKitCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        await base.InvokeAsync(provider, token);
         var git = provider.GetRequiredService<GitHandler>();
         var console = provider.GetRequiredService<IColoredConsole>();
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         
         try
         {
+            await base.InvokeAsync(provider, token);
+
             git.CheckoutModsSharedBranch(out var branch);
             console.WriteLine($"{branch} branch is now active on Shared repository");
             kFiles.DeleteAnyActive();

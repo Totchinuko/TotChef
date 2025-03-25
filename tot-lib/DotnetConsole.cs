@@ -4,9 +4,9 @@ namespace tot_lib;
 
 public class DotnetConsole : IColoredConsole
 {
-    public IStandardStreamWriter Out => (IStandardStreamWriter)Console.Out;
+    public IStandardStreamWriter Out { get; } = new DotnetConsoleStreamWriter(Console.Out);
     public bool IsOutputRedirected => Console.IsOutputRedirected;
-    public IStandardStreamWriter Error => (IStandardStreamWriter)Console.Error;
+    public IStandardStreamWriter Error { get; } = new DotnetConsoleStreamWriter(Console.Error);
     public bool IsErrorRedirected => Console.IsErrorRedirected;
     public bool IsInputRedirected => Console.IsInputRedirected;
 

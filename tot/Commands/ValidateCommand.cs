@@ -12,13 +12,14 @@ public class ValidateCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        await base.InvokeAsync(provider, token);
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         var console = provider.GetRequiredService<IColoredConsole>();
         var git = provider.GetRequiredService<GitHandler>();
         
         try
         {
+            await base.InvokeAsync(provider, token);
+
             if (git.IsGitRepoDirty(kFiles.ModSharedFolder))
                 throw new CommandException(CommandCode.RepositoryIsDirty, "ModsShared repo is dirty");
             if (git.IsGitRepoDirty(kFiles.ModFolder))

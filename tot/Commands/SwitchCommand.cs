@@ -12,12 +12,13 @@ public class SwitchCommand : ModBasedCommand, ITotCommand
 
     public override async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
     {
-        await base.InvokeAsync(provider, token);
         var kFiles = provider.GetRequiredService<KitchenFiles>();
         var console = provider.GetRequiredService<IColoredConsole>();
         
         try
         {
+            await base.InvokeAsync(provider, token);
+
             kFiles.DeleteAnyActive();
             kFiles.CreateActive();
             console.WriteLine($"{kFiles.ModName} is now active");
