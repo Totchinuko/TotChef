@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using tot_lib;
 using Tot;
+using Tot.Commands;
 
 namespace tot.Services;
 
@@ -159,7 +160,12 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
         if (git.IsGitRepoDirty(files.ModFolder))
             throw new CommandException(CommandCode.RepositoryIsDirty, "Mod repository is dirty");
         var data = await files.GetModInfos();
+        
         data.VersionBuild += 1;
+        var regex = VersionCommand.TitleVersionRegex();
+        data.Name = regex.Replace(data.Name,
+            $"{data.VersionMajor}.{data.VersionMinor}.{data.VersionBuild}");
+        
         await files.SetModInfos(data);
         git.CommitFile(files.ModFolder, files.ModInfo,
             $"Bump to {data.VersionMajor}.{data.VersionMinor}.{data.VersionBuild}");
