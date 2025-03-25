@@ -157,10 +157,26 @@ public class KitchenFiles(Config config) : ITotService
         return (await File.ReadAllTextAsync(file.FullName)).Contains(content);
     }
 
+    public bool HasWriteAccess(FileInfo file)
+    {
+        try
+        {
+            using var stream = file.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public void CreateModPakBackup()
     {
         if (ModPakFile.Exists)
         {
+            if (!HasWriteAccess(ModPakFile))
+                throw new CommandException(CommandCode.FileLocked, $"File is locked:{ModPakFile.FullName}");
+            
             if (ModPakFileBackup.Exists)
                 ModPakFileBackup.Delete();
             ModPakFile.MoveTo(ModPakFileBackup.FullName);
