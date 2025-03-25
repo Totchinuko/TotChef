@@ -46,6 +46,7 @@ public class PakCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
                     Compress ? "-compress" : ""
                 ));
             await p.WaitForExitAsync(token);
+            if(!p.HasExited) p.Kill();
             console.WriteLine($"{kFile.ModName} has been paked successfully.. !");
         }
         catch (CommandException ex)
