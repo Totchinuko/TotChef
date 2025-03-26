@@ -202,8 +202,7 @@ public class KitchenFiles(Config config) : ITotService
 
     public async Task<string> CreateTemporaryTextFile(string content)
     {
-        var guid = Guid.NewGuid().ToString();
-        var file = new FileInfo(Path.Join(Path.GetTempPath(), Constants.TotFolder, guid + Constants.TxtExt));
+        var file = new FileInfo(Path.GetTempFileName());
         if (file.Directory == null) throw new CommandException("Cannot create temporary text file");
 
         Directory.CreateDirectory(file.Directory.FullName);

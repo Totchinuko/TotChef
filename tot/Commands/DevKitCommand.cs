@@ -28,7 +28,7 @@ public class DevKitCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
         {
             kFiles.SetModName(ModName);
 
-            git.CheckoutModsSharedBranch(out var branch);
+            var branch = await git.CheckoutModsSharedBranch();
             console.WriteLine($"{branch} branch is now active on Shared repository");
             kFiles.DeleteAnyActive();
             kFiles.CreateActive();

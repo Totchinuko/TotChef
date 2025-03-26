@@ -1,75 +1,150 @@
-﻿using LibGit2Sharp;
-using tot_lib;
-using Tot;
+﻿using tot_lib;
+using tot_lib.Git;
+using tot_lib.Git.Models;
+using Worktree = tot_lib.Git.Worktree;
 
 namespace tot.Services;
 
-public class GitHandler(Config config, KitchenFiles files) : ITotService
+public class GitHandler(KitchenFiles files) : ITotService
 {
-    public void CommitFile(DirectoryInfo directory, FileInfo file, string message)
+    public async Task CommitFile(DirectoryInfo directory, FileInfo file, string message)
     {
-        if (!Repository.IsValid(directory.FullName))
+        var repo = directory.FullName;
+        if (!await IsRepositoryValid(repo))
             throw new CommandException(CommandCode.RepositoryInvalid, "Invalid repository");
-
-        using Repository repo = new(directory.FullName);
-        var status = repo.RetrieveStatus();
-        if (status.Staged.Any())
+        if (await HasAnyStagedChanges(repo))
             throw new CommandException(CommandCode.RepositoryIsDirty, "Repository is dirty");
-        repo.Index.Add(file.FullName.RemoveRootFolder(directory.FullName));
-        repo.Index.Write();
-        Signature author = new(config.GitAuthorName, config.GitAuthorEmail, DateTime.Now);
-        repo.Commit(message, author, author);
+        
+        var localFile = file.FullName.RemoveRootFolder(directory.FullName);
+        if (!await StageFile(repo, localFile))
+            throw new CommandException($"Could not stage {localFile}");
+        await Commit(repo, message, false);
     }
 
-    public bool IsGitRepoDirty(DirectoryInfo directory)
+    public async Task<bool> IsGitRepoInvalidOrDirty(DirectoryInfo directory)
     {
-        if (!Repository.IsValid(directory.FullName)) return false;
-        using var repo = new Repository(directory.FullName);
-        return repo.RetrieveStatus().IsDirty;
+        if (!await IsRepositoryValid(directory.FullName)) return false;
+        return await IsRepositoryDirty(directory.FullName);
     }
 
-    public bool HasDedicatedModsSharedBranch()
+    public async Task<bool> HasDedicatedModsSharedBranch()
     {
-        if (!Repository.IsValid(files.ModsShared.FullName)) return false;
-        using Repository repo = new(files.ModsShared.FullName);
-        return repo.Branches.Any(branch => branch.FriendlyName == files.ModName);
+        return await HasBranch(files.ModsShared.FullName, files.ModName);
     }
 
-    public void CheckoutModsSharedBranch(out string branchName)
+    public async Task<string> CheckoutModsSharedBranch()
     {
-        branchName = "master";
-        if (!Repository.IsValid(files.ModsShared.FullName))
-            throw CommandCode.NotFound(files.ModsShared);
+        var repo = files.ModsShared.FullName;
+        if (!await IsRepositoryValid(repo))
+            throw new CommandException($"Invalid repository {repo}");
 
-
-        using Repository repo = new(files.ModsShared.FullName);
-        Branch? branch = null;
-        foreach (var b in repo.Branches)
-            if (b.FriendlyName == files.ModName)
-                branch = b;
-
+        var branches = await GetReposBranches(repo);
+        var branch = branches.FirstOrDefault(b => b.FriendlyName == files.ModName);
+        branch ??= branches.FirstOrDefault(b => b.FriendlyName == "master");
+        
         if (branch == null)
-            branch = repo.Branches["master"];
+            throw new CommandException("Invalid ModsShared repository branches");
 
-        branchName = branch.FriendlyName;
-        if (repo.Head.CanonicalName == branch.CanonicalName)
-            return;
+        var worktree = await GetCurrentWorktree();
+        if (worktree.Branch == branch.Name)
+            return branch.FriendlyName;
 
-        if (IsGitRepoDirty(files.ModsShared))
+        if (await IsGitRepoInvalidOrDirty(files.ModsShared))
             throw new CommandException(CommandCode.RepositoryIsDirty, "ModsShared Repository is dirty");
 
-        Commands.Checkout(repo, branch);
+        if(!await Checkout(repo, branch.Name))
+            throw new CommandException($"Could not checkout {branch.FriendlyName}");
+        return branch.FriendlyName;
     }
 
-    public bool IsModsSharedBranchValid()
+    public async Task<bool> IsModsSharedBranchValid()
     {
-        using var repo = new Repository(files.ModsShared.FullName);
-        return repo.Head.FriendlyName == files.ModName ||
-               (!HasDedicatedModsSharedBranch() && repo.Head.FriendlyName == "master");
+        if (!await IsRepositoryValid(files.ModsShared.FullName))
+            return false;
+
+        var repo = await GetCurrentWorktree();
+        return repo.Name == files.ModName ||
+               (!await HasDedicatedModsSharedBranch() && repo.Name == "master");
     }
 
-    public bool IsModsSharedRepositoryValid()
+    public async Task<tot_lib.Git.Models.Worktree> GetCurrentWorktree()
     {
-        return Repository.IsValid(files.ModsShared.FullName);
+        var query = new Worktree(files.ModsShared.FullName);
+        var results = await Task.Run(query.List);
+        if(results.Count == 0)
+            throw new CommandException("No worktree found");
+        if(results.Count > 1)
+            throw new CommandException("Multiple worktrees is unsupported");
+        return results.First();
+    }
+
+    public async Task<List<Branch>> GetReposBranches(string repo)
+    {
+        var branchQuery = new QueryBranches(repo);
+        return await Task.Run(branchQuery.Result);
+    }
+
+    public async Task<bool> HasBranch(string repo, string branch)
+    {
+        return (await GetReposBranches(repo)).Any(b => b.FriendlyName == branch);
+    }
+
+    public async Task<bool> IsModsSharedRepositoryValid()
+    {
+        return await IsRepositoryValid(files.ModsShared.FullName);
+    }
+
+    public async Task<List<Change>> ListChanges(string repo, bool includeUntracked = true)
+    {
+        var query = new QueryLocalChanges(repo, includeUntracked);
+        return await Task.Run(query.Result);
+    }
+
+    public async Task<bool> StageFile(string repo, string localFile)
+    {
+        var change = await GetFileChanges(repo, localFile);
+        if (change == null) return false;
+        if (change.WorkTree == ChangeState.None) return true;
+        await GitUtils.StageChanges(repo, [change]);
+        change = await GetFileChanges(repo, localFile);
+        if (change == null) return false;
+        if (change.WorkTree != ChangeState.None) return false;
+        return true;
+    }
+
+    public async Task<Change?> GetFileChanges(string repo, string localFile)
+    {
+        var changes = await ListChanges(repo);
+        return changes.FirstOrDefault(x => x.Path == localFile);
+    }
+
+    public async Task<bool> IsRepositoryDirty(string repo)
+    {
+        return (await ListChanges(repo)).Count != 0;
+    }
+
+    public async Task<bool> HasAnyStagedChanges(string repo)
+    {
+        var changes = await ListChanges(repo);
+        return changes.Any(x => x.Index != ChangeState.None);
+    }
+
+    public async Task Commit(string repo, string message, bool amend)
+    {
+        var commit = new Commit(repo, message, amend, false);
+        await Task.Run(commit.Run);
+    }
+
+    public async Task<bool> Checkout(string repo, string branch)
+    {
+        var checkout = new Checkout(repo);
+        return await Task.Run(() => checkout.Branch(branch));
+    } 
+
+    public async Task<bool> IsRepositoryValid(string repo)
+    {
+        var query = new QueryGitDir(repo);
+        var result = await Task.Run(query.ReadToEnd);
+        return result.IsSuccess;
     }
 }

@@ -50,4 +50,9 @@ public static class Constants
     ];
 
     public static readonly string[] EditorArgs = ["-ModDevKit", "-Installed"];
+    
+    public const string GitCommitVersionMessage = "Bump version to {0}.{1}.{2}";
+    public const string GitCommitDevKitVersionMessage = "Bump Devkit version to {0}.{1}";
+    public const string GitCommitCookinfoMessage = "Update cooking infos";
+    public const string GitCommitDescriptionMessage = "Update mod description";
 }

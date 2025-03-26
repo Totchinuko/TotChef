@@ -39,12 +39,12 @@ public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
         try
         {
             kFiles.SetModName(ModName);
-            if (git.IsGitRepoDirty(kFiles.ModsShared) && !Force)
+            if (await git.IsGitRepoInvalidOrDirty(kFiles.ModsShared) && !Force)
                 throw new CommandException(CommandCode.RepositoryIsDirty, "Cooking:ModsShared repo is dirty");
-            if (git.IsGitRepoDirty(kFiles.ModFolder) && !Force)
+            if (await git.IsGitRepoInvalidOrDirty(kFiles.ModFolder) && !Force)
                 throw new CommandException(CommandCode.RepositoryIsDirty,
                     $"Cooking:Mod {kFiles.ModName} repo is dirty");
-            if (!git.IsModsSharedBranchValid())
+            if (!await git.IsModsSharedBranchValid())
                 throw new CommandException(CommandCode.RepositoryWrongBranch,
                     "Cooking:Dedicated ModsShared branch is not checked out");
             

@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
 using System.Diagnostics;
-using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
 using tot.Services;
@@ -48,7 +47,7 @@ public class DescriptionCommand : ITotCommandInvoked, ITotCommand, ITotCommandOp
             modInfos.Description = description;
             console.WriteLine("Commiting changes");
             await kFiles.SetModInfos(modInfos);
-            git.CommitFile(kFiles.ModFolder, kFiles.ModCookInfo, "Update mod description");
+            await git.CommitFile(kFiles.ModFolder, kFiles.ModCookInfo, Constants.GitCommitDescriptionMessage);
         }
         catch (CommandException ex)
         {

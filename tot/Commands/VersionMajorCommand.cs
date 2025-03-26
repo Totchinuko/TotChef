@@ -38,8 +38,10 @@ public class VersionMajorCommand : ITotCommand, ITotCommandInvoked, ITotCommandO
                 $"{modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
             console.WriteLine(modInfos.Name);
             await kFiles.SetModInfos(modInfos);
-            git.CommitFile(kFiles.ModFolder, kFiles.ModInfo,
-                $"Bump version to {modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
+            await git.CommitFile(kFiles.ModFolder, kFiles.ModInfo,
+                string.Format(
+                    Constants.GitCommitVersionMessage, 
+                    modInfos.VersionMajor, modInfos.VersionMinor, modInfos.VersionBuild));
         }
         catch (CommandException ex)
         {

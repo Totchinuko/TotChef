@@ -16,7 +16,7 @@ public class PathSharedCommand : ITotCommand, ITotCommandInvoked
         var console = provider.GetRequiredService<IColoredConsole>();
         try
         {
-            console.Write(kFiles.ModSharedFolder.PosixFullName());
+            console.Write(kFiles.ModsShared.PosixFullName());
             return 0;
         }
         catch (CommandException ex)

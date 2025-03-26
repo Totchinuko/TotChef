@@ -134,12 +134,12 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
             sb.AppendLine(Constants.IncludePrefix + line);
 
         await files.SetCookInfos(sb.ToString());
-        git.CommitFile(files.ModFolder, files.ModCookInfo, "Update mod cookinfos");
+        await git.CommitFile(files.ModFolder, files.ModCookInfo, Constants.GitCommitCookinfoMessage);
     }
 
     public async Task UpdateModDevKitVersion()
     {
-        if (git.IsGitRepoDirty(files.ModFolder))
+        if (await git.IsGitRepoInvalidOrDirty(files.ModFolder))
             throw new CommandException(CommandCode.RepositoryIsDirty, "Mod repository is dirty");
 
         var infos = await files.GetModInfos();
@@ -149,15 +149,17 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
         infos.RevisionNumber = devkit.Revision;
         infos.SnapshotId = devkit.SnapshotId;
         await files.SetModInfos(infos);
-        git.CommitFile(files.ModFolder, files.ModInfo,
-            $"Bump DevKit version to {devkit.Revision}.{devkit.SnapshotId}");
+        await git.CommitFile(files.ModFolder, files.ModInfo,
+            string.Format(
+                Constants.GitCommitDevKitVersionMessage, 
+                devkit.Revision, devkit.SnapshotId));
     }
 
     public async Task AutoBumpBuild()
     {
         if (!config.AutoBumpBuild) return;
 
-        if (git.IsGitRepoDirty(files.ModFolder))
+        if (await git.IsGitRepoInvalidOrDirty(files.ModFolder))
             throw new CommandException(CommandCode.RepositoryIsDirty, "Mod repository is dirty");
         var data = await files.GetModInfos();
         
@@ -167,8 +169,10 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
             $"{data.VersionMajor}.{data.VersionMinor}.{data.VersionBuild}");
         
         await files.SetModInfos(data);
-        git.CommitFile(files.ModFolder, files.ModInfo,
-            $"Bump to {data.VersionMajor}.{data.VersionMinor}.{data.VersionBuild}");
+        await git.CommitFile(files.ModFolder, files.ModInfo,
+            string.Format(
+                Constants.GitCommitVersionMessage, 
+                data.VersionMajor, data.VersionMinor, data.VersionBuild));
     }
 
     public async Task<DevKitVersion> GetDevKitVersion()

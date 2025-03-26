@@ -27,9 +27,9 @@ public class ValidateCommand : ITotCommandInvoked, ITotCommandOptions, ITotComma
         {
             kFiles.SetModName(ModName);
 
-            if (git.IsGitRepoDirty(kFiles.ModSharedFolder))
+            if (await git.IsGitRepoInvalidOrDirty(kFiles.ModSharedFolder))
                 throw new CommandException(CommandCode.RepositoryIsDirty, "ModsShared repo is dirty");
-            if (git.IsGitRepoDirty(kFiles.ModFolder))
+            if (await git.IsGitRepoInvalidOrDirty(kFiles.ModFolder))
                 throw new CommandException(CommandCode.RepositoryIsDirty, $"Mod {kFiles.ModName} repo is dirty");
             return 0;
         }
