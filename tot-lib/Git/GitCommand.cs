@@ -178,7 +178,7 @@ namespace tot_lib.Git
         private ProcessStartInfo CreateGitStartInfo()
         {
             var start = new ProcessStartInfo();
-            start.FileName = "git";
+            start.FileName = GitUtils.GitBinary;
             start.Arguments = "--no-pager -c core.quotepath=off -c credential.helper=manager ";
             start.UseShellExecute = false;
             start.CreateNoWindow = true;

@@ -1,12 +1,21 @@
 ﻿using tot_lib;
 using tot_lib.Git;
 using tot_lib.Git.Models;
+using Tot;
 using Worktree = tot_lib.Git.Worktree;
 
 namespace tot.Services;
 
-public class GitHandler(KitchenFiles files) : ITotService
+public class GitHandler : ITotService
 {
+    private readonly KitchenFiles _files;
+
+    public GitHandler(Config config, KitchenFiles files)
+    {
+        _files = files;
+        GitUtils.GitBinary = config.GitBinary;
+    }
+
     public async Task CommitFile(DirectoryInfo directory, FileInfo file, string message)
     {
         var repo = directory.FullName;
@@ -29,17 +38,17 @@ public class GitHandler(KitchenFiles files) : ITotService
 
     public async Task<bool> HasDedicatedModsSharedBranch()
     {
-        return await HasBranch(files.ModsShared.FullName, files.ModName);
+        return await HasBranch(_files.ModsShared.FullName, _files.ModName);
     }
 
     public async Task<string> CheckoutModsSharedBranch()
     {
-        var repo = files.ModsShared.FullName;
+        var repo = _files.ModsShared.FullName;
         if (!await IsRepositoryValid(repo))
             throw new CommandException($"Invalid repository {repo}");
 
         var branches = await GetReposBranches(repo);
-        var branch = branches.FirstOrDefault(b => b.FriendlyName == files.ModName);
+        var branch = branches.FirstOrDefault(b => b.FriendlyName == _files.ModName);
         branch ??= branches.FirstOrDefault(b => b.FriendlyName == "master");
         
         if (branch == null)
@@ -49,7 +58,7 @@ public class GitHandler(KitchenFiles files) : ITotService
         if (worktree.Branch == branch.Name)
             return branch.FriendlyName;
 
-        if (await IsGitRepoInvalidOrDirty(files.ModsShared))
+        if (await IsGitRepoInvalidOrDirty(_files.ModsShared))
             throw new CommandException(CommandCode.RepositoryIsDirty, "ModsShared Repository is dirty");
 
         if(!await Checkout(repo, branch.Name))
@@ -59,17 +68,17 @@ public class GitHandler(KitchenFiles files) : ITotService
 
     public async Task<bool> IsModsSharedBranchValid()
     {
-        if (!await IsRepositoryValid(files.ModsShared.FullName))
+        if (!await IsRepositoryValid(_files.ModsShared.FullName))
             return false;
 
         var repo = await GetCurrentWorktree();
-        return repo.Name == files.ModName ||
+        return repo.Name == _files.ModName ||
                (!await HasDedicatedModsSharedBranch() && repo.Name == "master");
     }
 
     public async Task<tot_lib.Git.Models.Worktree> GetCurrentWorktree()
     {
-        var query = new Worktree(files.ModsShared.FullName);
+        var query = new Worktree(_files.ModsShared.FullName);
         var results = await Task.Run(query.List);
         if(results.Count == 0)
             throw new CommandException("No worktree found");
@@ -91,7 +100,7 @@ public class GitHandler(KitchenFiles files) : ITotService
 
     public async Task<bool> IsModsSharedRepositoryValid()
     {
-        return await IsRepositoryValid(files.ModsShared.FullName);
+        return await IsRepositoryValid(_files.ModsShared.FullName);
     }
 
     public async Task<List<Change>> ListChanges(string repo, bool includeUntracked = true)

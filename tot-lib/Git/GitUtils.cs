@@ -12,6 +12,12 @@ public static partial class GitUtils
         get;
         private set;
     } = new Version(0, 0, 0);
+
+    public static string GitBinary
+    {
+        get;
+        set;
+    } = "git";
     
     [GeneratedRegex(@"^git version[\s\w]*(\d+)\.(\d+)[\.\-](\d+).*$")]
     private static partial Regex REG_GIT_VERSION();

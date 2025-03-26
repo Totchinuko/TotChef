@@ -21,6 +21,8 @@ public class Config : ITotService
 
     public string DevKitPath { get; set; }
 
+    public string GitBinary { get; set; } = "git";
+
     public bool AutoBumpBuild { get; set; }
 
     public string GitAuthorName { get; set; } = "Tot Chef";
@@ -73,22 +75,25 @@ public class Config : ITotService
     {
         switch (key)
         {
-            case "DevKitPath":
+            case nameof(DevKitPath):
                 DevKitPath = value;
                 break;
-            case "AutoBumpBuild":
+            case nameof(AutoBumpBuild):
                 if (!bool.TryParse(value, out var b))
                     throw new CommandException(CommandCode.MissingArgument, "Invalid value for AutoBumpBuild");
                 AutoBumpBuild = b;
                 break;
-            case "GitAuthorName":
+            case nameof(GitAuthorName):
                 GitAuthorName = value;
                 break;
-            case "GitAuthorEmail":
+            case nameof(GitAuthorEmail):
                 GitAuthorEmail = value;
                 break;
-            case "DefaultCliEditor":
+            case nameof(DefaultCliEditor):
                 DefaultCliEditor = value;
+                break;
+            case nameof(GitBinary):
+                GitBinary = value;
                 break;
             default:
                 throw new CommandException(CommandCode.MissingArgument, $"Invalid key: {key}");
@@ -99,30 +104,25 @@ public class Config : ITotService
     {
         return
         [
-            "DevKitPath",
-            "AutoBumpBuild",
-            "GitAuthorName",
-            "GitAuthorEmail",
-            "DefaultCliEditor"
+            nameof(DevKitPath),
+            nameof(AutoBumpBuild),
+            nameof(GitAuthorName),
+            nameof(GitAuthorEmail),
+            nameof(DefaultCliEditor),
+            nameof(GitBinary)
         ];
     }
 
     public string GetValue(string key)
     {
-        switch (key)
+        return key switch
         {
-            case "DevKitPath":
-                return DevKitPath;
-            case "AutoBumpBuild":
-                return AutoBumpBuild.ToString();
-            case "GitAuthorName":
-                return GitAuthorName;
-            case "GitAuthorEmail":
-                return GitAuthorEmail;
-            case "DefaultCliEditor":
-                return DefaultCliEditor;
-            default:
-                throw new CommandException(CommandCode.MissingArgument, $"Invalid key: {key}");
-        }
+            nameof(DevKitPath) => DevKitPath,
+            nameof(AutoBumpBuild) => AutoBumpBuild.ToString(),
+            nameof(GitAuthorName) => GitAuthorName,
+            nameof(GitAuthorEmail) => GitAuthorEmail,
+            nameof(DefaultCliEditor) => DefaultCliEditor,
+            _ => throw new CommandException(CommandCode.MissingArgument, $"Invalid key: {key}")
+        };
     }
 }
