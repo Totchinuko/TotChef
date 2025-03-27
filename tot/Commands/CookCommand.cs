@@ -9,6 +9,7 @@ public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
 {
     public bool Force { get; set; }
     public bool Verbose { get; set; }
+    public bool NoVersionBump { get; set; }
     
     public string Command => "cook";
     public string Description => "Start a cook process for the mod";
@@ -25,6 +26,10 @@ public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
         opt = new TotOption<bool>("--verbose", "Display the Dev Kit cook output");
         opt.AddAlias("-v");
         opt.AddSetter(x => Verbose = x);
+        yield return opt;
+        opt = new TotOption<bool>("--no-version-bump", "Prevent the auto bump of the build version");
+        opt.AddAlias("-nv");
+        opt.AddSetter(x => NoVersionBump = x);
         yield return opt;
     }
 
@@ -63,7 +68,8 @@ public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
                     console.WriteLine("Cooking:Change:" + c);
             }
 
-            await clerk.AutoBumpBuild();
+            if(!NoVersionBump)
+                await clerk.AutoBumpBuild();
             await clerk.UpdateModDevKitVersion();
             console.WriteLine("Cooking:Cleaning cook folders from previous operations...");
             clerk.CleanCookedFolder();
