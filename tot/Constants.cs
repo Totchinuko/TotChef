@@ -2,8 +2,6 @@
 
 public static class Constants
 {
-    public const string TotFolder = "tot";
-
     public const string CmdBinary = "UE4Editor-Cmd.exe";
     public const string EditorBinary = "UE4Editor.exe";
     public const string PakBinary = "UnrealPak.exe";
@@ -55,4 +53,7 @@ public static class Constants
     public const string GitCommitDevKitVersionMessage = "Bump Devkit version to {0}.{1}";
     public const string GitCommitCookinfoMessage = "Update cooking infos";
     public const string GitCommitDescriptionMessage = "Update mod description";
+    
+    public const string ConfigFileName = "config.json";
+
 }

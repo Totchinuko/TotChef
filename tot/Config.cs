@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using tot_lib;
 
@@ -12,7 +14,6 @@ public partial class ConfigJsonContext : JsonSerializerContext
 
 public class Config : ITotService
 {
-    private const string ConfigFileName = "Tot.json";
 
     public Config()
     {
@@ -46,25 +47,24 @@ public class Config : ITotService
         if (string.IsNullOrEmpty(json))
             return new Config();
 
-        var config = JsonSerializer.Deserialize(json, ConfigJsonContext.Default.Config) ??
-                     new Config { DevKitPath = "" };
-        return config;
+        return JsonSerializer.Deserialize(json, ConfigJsonContext.Default.Config) ?? new Config();
     }
 
     public void SaveConfig()
     {
         var json = JsonSerializer.Serialize(this, ConfigJsonContext.Default.Config);
         var configPath = GetConfigPath() ?? "";
+        var directory = Path.GetDirectoryName(configPath);
+        if(directory is null)
+            throw new DirectoryNotFoundException(directory);
+        Directory.CreateDirectory(directory);
         File.WriteAllText(configPath, json);
     }
 
-    internal static string? GetConfigPath()
+    private static string? GetConfigPath()
     {
-        var configPath = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
-        if (string.IsNullOrEmpty(configPath))
-            return null;
-        configPath = Path.Combine(configPath, ConfigFileName);
-        return configPath;
+        var directory = typeof(Config).GetStandardFolder(Environment.SpecialFolder.ApplicationData);
+        return Path.Combine(directory.FullName, Constants.ConfigFileName);
     }
 
     public void SetValue(string key, string value)

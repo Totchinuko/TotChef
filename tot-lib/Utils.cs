@@ -1,5 +1,6 @@
 ﻿using System.CommandLine;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib.Git;
@@ -89,5 +90,24 @@ public static class Utils
         (this RootCommand root, Action<IServiceCollection> serviceConfiguration) where T : class, ITotCommand
     {
         root.AddCommand(TotCommand.Create<T>(serviceConfiguration));
+    }
+
+    public static T? GetAssemblyAttribute<T>(this Type type) where T : Attribute
+    {
+        Assembly assembly = type.Assembly;
+        var attributes = assembly.GetCustomAttributes(typeof(T), true).FirstOrDefault();
+        if(attributes is null) return null;
+        return (attributes as T);
+    }
+
+    public static DirectoryInfo GetStandardFolder(this Type type, Environment.SpecialFolder folder)
+    {
+        string company = type.GetAssemblyAttribute<AssemblyCompanyAttribute>()?.Company ?? string.Empty;
+        if (string.IsNullOrEmpty(company)) company = "tot-software";
+        string product = type.GetAssemblyAttribute<AssemblyProductAttribute>()?.Product ?? string.Empty;
+        if (string.IsNullOrEmpty(product)) product = "tot-default";
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var directory = new DirectoryInfo(Path.Combine(appData, company, product));
+        return directory;
     }
 }
