@@ -25,10 +25,6 @@ public class Config : ITotService
 
     public bool AutoBumpBuild { get; set; }
 
-    public string GitAuthorName { get; set; } = "Tot Chef";
-
-    public string GitAuthorEmail { get; set; } = "no@email.com";
-
     public string DefaultCliEditor { get; set; } = "nano";
 
     [JsonIgnore] public bool IsValid => !string.IsNullOrEmpty(DevKitPath);
@@ -83,12 +79,6 @@ public class Config : ITotService
                     throw new CommandException(CommandCode.MissingArgument, "Invalid value for AutoBumpBuild");
                 AutoBumpBuild = b;
                 break;
-            case nameof(GitAuthorName):
-                GitAuthorName = value;
-                break;
-            case nameof(GitAuthorEmail):
-                GitAuthorEmail = value;
-                break;
             case nameof(DefaultCliEditor):
                 DefaultCliEditor = value;
                 break;
@@ -106,8 +96,6 @@ public class Config : ITotService
         [
             nameof(DevKitPath),
             nameof(AutoBumpBuild),
-            nameof(GitAuthorName),
-            nameof(GitAuthorEmail),
             nameof(DefaultCliEditor),
             nameof(GitBinary)
         ];
@@ -119,9 +107,8 @@ public class Config : ITotService
         {
             nameof(DevKitPath) => DevKitPath,
             nameof(AutoBumpBuild) => AutoBumpBuild.ToString(),
-            nameof(GitAuthorName) => GitAuthorName,
-            nameof(GitAuthorEmail) => GitAuthorEmail,
             nameof(DefaultCliEditor) => DefaultCliEditor,
+            nameof(GitBinary) => GitBinary,
             _ => throw new CommandException(CommandCode.MissingArgument, $"Invalid key: {key}")
         };
     }
