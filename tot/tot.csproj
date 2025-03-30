@@ -16,15 +16,15 @@
         <PublishAot>true</PublishAot>
         <PublishTrimmed>true</PublishTrimmed>
 
-        <Product>chef</Product>
         <Description>CLI tool for Conan Exile Modding</Description>
-        <Company>tot-software</Company>
-        <Copyright>Copyright © $([System.DateTime]::Now.Year) Tot Software.</Copyright>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/Totchinuko/TotChef.git</PackageProjectUrl>
         <RepositoryUrl>https://github.com/Totchinuko/TotChef.git</RepositoryUrl>
         <RepositoryType>Private</RepositoryType>
         <Title>Tot Chef</Title>
+        <Company>totchinuko</Company>
+        <Copyright>Copyright © $([System.DateTime]::Now.Year) Totchinuko https://github.com/Totchinuko</Copyright>
+        <PackageLicenseExpression>GPL-2.0</PackageLicenseExpression>
+        <Product>chef</Product>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
         <DebugType>none</DebugType>
