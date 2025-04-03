@@ -67,6 +67,6 @@ public class Stove
         if (match.Success)
             _console.Error.WriteLine(line);
         else if (_verbose)
-            _console.WriteLine(line);
+            _console.WriteLines(ConsoleColor.DarkGray, line);
     }
 }
