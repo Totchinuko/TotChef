@@ -68,9 +68,11 @@ public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
                     console.WriteLine("Cooking:Change:" + c);
             }
 
-            if(!NoVersionBump)
+            if (!NoVersionBump)
+            {
                 await clerk.AutoBumpBuild();
-            await clerk.UpdateModDevKitVersion();
+                await clerk.UpdateModDevKitVersion();
+            }
             console.WriteLine("Cooking:Cleaning cook folders from previous operations...");
             clerk.CleanCookedFolder();
             clerk.CleanCookingFolder();

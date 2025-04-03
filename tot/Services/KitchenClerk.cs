@@ -134,17 +134,22 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
             sb.AppendLine(Constants.IncludePrefix + line);
 
         await files.SetCookInfos(sb.ToString());
+    }
+
+    public async Task SetCookInfoAndCommit(CookInfos infos)
+    {
+        await SetCookInfo(infos);
         await git.CommitFile(files.ModFolder, files.ModCookInfo, Constants.GitCommitCookinfoMessage);
     }
 
     public async Task UpdateModDevKitVersion()
     {
-        if (await git.IsGitRepoInvalidOrDirty(files.ModFolder))
-            throw new CommandException(CommandCode.RepositoryIsDirty, "Mod repository is dirty");
-
         var infos = await files.GetModInfos();
         var devkit = await GetDevKitVersion();
         if (infos.RevisionNumber == devkit.Revision && infos.SnapshotId == devkit.SnapshotId) return;
+        
+        if (await git.IsGitRepoInvalidOrDirty(files.ModFolder))
+            throw new CommandException(CommandCode.RepositoryIsDirty, "Mod repository is dirty");
 
         infos.RevisionNumber = devkit.Revision;
         infos.SnapshotId = devkit.SnapshotId;
