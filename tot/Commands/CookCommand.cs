@@ -62,7 +62,10 @@ public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
 
             if (change.Count > 0)
             {
-                await clerk.SetCookInfo(cookInfos);
+                if (Force)
+                    await clerk.SetCookInfo(cookInfos);
+                else
+                    await clerk.SetCookInfoAndCommit(cookInfos);
                 console.WriteLine($"Cooking:Added {change.Count} missing local mod files to cooking");
                 foreach (var c in change)
                     console.WriteLine("Cooking:Change:" + c);
