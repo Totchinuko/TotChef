@@ -24,7 +24,7 @@ public class GitHandler : ITotService
         if (await HasAnyStagedChanges(repo))
             throw new CommandException(CommandCode.RepositoryIsDirty, "Repository is dirty");
         
-        var localFile = file.FullName.RemoveRootFolder(directory.FullName);
+        var localFile = file.FullName.RemoveRootFolder(directory.FullName).PosixFullName();
         if (!await StageFile(repo, localFile))
             throw new CommandException($"Could not stage {localFile}");
         await Commit(repo, message, false);
