@@ -30,16 +30,10 @@ public class DescriptionCommand : ITotCommandInvoked, ITotCommand, ITotCommandOp
             kFiles.SetModName(ModName);
             var modInfos = await kFiles.GetModInfos();
             var tmpFile = await kFiles.CreateTemporaryTextFile(modInfos.Description);
-            using (var fileOpener = new Process())
-            {
-                fileOpener.StartInfo.FileName = config.DefaultCliEditor;
-                fileOpener.StartInfo.Arguments = $"\"{tmpFile}\"";
-                fileOpener.StartInfo.UseShellExecute = false;
-                fileOpener.Start();
-                await fileOpener.WaitForExitAsync(cancellationToken);
-            }
+            await config.EditWithCli(tmpFile, cancellationToken);
 
             var description = await File.ReadAllTextAsync(tmpFile, cancellationToken);
+            File.Delete(tmpFile);
             description = description.Trim();
             if (modInfos.Description == description)
                 return 0;

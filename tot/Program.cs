@@ -31,6 +31,7 @@ internal class Program
         rootCommand.CreateTot<SwitchCommand>(ConfigureServices);
         rootCommand.CreateTot<ValidateCommand>(ConfigureServices);
         rootCommand.CreateTot<VersionCommand>(ConfigureServices);
+        rootCommand.CreateTot<NoteCommand>(ConfigureServices);
         
         return await rootCommand.InvokeAsync(args);
     }
@@ -43,5 +44,6 @@ internal class Program
         services.AddSingleton<KitchenClerk>();
         services.AddSingleton<GitHandler>();
         services.AddSingleton<Stove>();
+        services.AddSingleton<PatchHandler>();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Diagnostics;
 using tot_lib;
 
 namespace Tot;
@@ -22,5 +23,19 @@ public static class Utils
         option.SetDefaultValue(string.Empty);
         option.AddSetter(x => setter(x ?? string.Empty));
         return option;
+    }
+
+    public static async Task EditWithCli(this Config config, string filePath) =>
+        await config.EditWithCli(filePath, CancellationToken.None);
+    public static async Task EditWithCli(this Config config, string filePath, CancellationToken token)
+    {
+        using (var fileOpener = new Process())
+        {
+            fileOpener.StartInfo.FileName = config.DefaultCliEditor;
+            fileOpener.StartInfo.Arguments = $"\"{filePath}\"";
+            fileOpener.StartInfo.UseShellExecute = false;
+            fileOpener.Start();
+            await fileOpener.WaitForExitAsync(token);
+        }
     }
 }
