@@ -1,5 +1,10 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Help;
+using System.CommandLine.Parsing;
+using System.Drawing;
 using Microsoft.Extensions.DependencyInjection;
+using Pastel;
 using Serilog;
 using Serilog.Core;
 using Serilog.Templates;
@@ -33,8 +38,21 @@ internal static class Program
         rootCommand.AddCommand(ValidateCommand.Command);
         rootCommand.AddCommand(VersionCommand.Command);
         rootCommand.AddCommand(NoteCommand.Command);
+
+        var parser = new CommandLineBuilder(rootCommand)
+            .UseDefaults()
+            .UseHelp(ctx =>
+            {
+                ctx.HelpBuilder.CustomizeLayout(
+                    _ => HelpBuilder.Default
+                        .GetLayout()
+                        .Skip(1)
+                        .Prepend(hc => hc.Output.WriteLine("tot.exe is a CLI that provide helpers for modding Conan Exile, using .net, and is an Open Source project covered by the GNU General Public License version 2."))
+                        .Prepend(hc => hc.Output.WriteLine("Tot!Chet".Pastel(Constants.ColorOrange)))
+                    );
+            }).Build();
         
-        return await rootCommand.InvokeAsync(args);
+        return await parser.InvokeAsync(args);
     }
 
     public static void ConfigureServices(IServiceCollection services)
