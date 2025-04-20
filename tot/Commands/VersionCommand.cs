@@ -1,13 +1,14 @@
 ﻿using System.CommandLine;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public partial class VersionCommand(KitchenFiles files, IColoredConsole console) : IInvokableCommand<VersionCommand>
+public partial class VersionCommand(KitchenFiles files, ILogger<VersionCommand> logger) : IInvokableCommand<VersionCommand>
 {
     public static Command Command = CommandBuilder
         .CreateInvokable<VersionCommand>("version", "Handle mod version modification and display")
@@ -25,11 +26,13 @@ public partial class VersionCommand(KitchenFiles files, IColoredConsole console)
         {
             files.SetModName(ModName);
             var modInfos = await files.GetModInfos();
-            console.Write($"{modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
+            logger.LogInformation("{major}.{minor}.{build}", 
+                modInfos.VersionMajor,modInfos.VersionMinor,modInfos.VersionBuild);
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to change version");
+            return ex.GetErrorCode();
         }
 
         return 0;

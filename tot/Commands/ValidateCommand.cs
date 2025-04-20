@@ -1,14 +1,14 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class ValidateCommand(KitchenFiles files, IColoredConsole console, GitHandler git) : IInvokableCommand<ValidateCommand>
+public class ValidateCommand(KitchenFiles files, ILogger<ValidateCommand> logger, GitHandler git) : IInvokableCommand<ValidateCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<ValidateCommand>("validate", "Validate git repositories for the cooking process")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.AddModName((c,v) => c.ModName = v)
@@ -22,14 +22,15 @@ public class ValidateCommand(KitchenFiles files, IColoredConsole console, GitHan
             files.SetModName(ModName);
 
             if (await git.IsGitRepoInvalidOrDirty(files.ModSharedFolder))
-                throw new CommandException(CommandCode.RepositoryIsDirty, "ModsShared repo is dirty");
+                throw new Exception("ModsShared repo is dirty");
             if (await git.IsGitRepoInvalidOrDirty(files.ModFolder))
-                throw new CommandException(CommandCode.RepositoryIsDirty, $"Mod {files.ModName} repo is dirty");
+                throw new Exception($"Mod {files.ModName} repo is dirty");
             return 0;
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to validate");
+            return ex.GetErrorCode();
         }
     }
 }

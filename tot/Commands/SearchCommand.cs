@@ -1,14 +1,14 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class SearchCommand(IColoredConsole console, KitchenClerk clerk) : IInvokableCommand<SearchCommand>
+public class SearchCommand(ILogger<SearchCommand> logger, KitchenClerk clerk) : IInvokableCommand<SearchCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<SearchCommand>("search", "Process a mod list to highlight common files")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Arguments.Create<string>("mod-list", "Path to the mod list")
@@ -36,7 +36,7 @@ public class SearchCommand(IColoredConsole console, KitchenClerk clerk) : IInvok
             }
             else
             {
-                throw new CommandException("Invalid mod list");
+                throw new Exception("Invalid mod list");
             }
 
             List<PakListing> listings = [];
@@ -48,24 +48,25 @@ public class SearchCommand(IColoredConsole console, KitchenClerk clerk) : IInvok
                 var mod = new FileInfo(path);
                 if (mod.Exists)
                 {
-                    console.WriteLine($"Parsing:{mod.FullName}");
+                    logger.LogInformation("Parsing:{file}", mod.FullName);
                     var pakList = await clerk.QueryPakFile(mod);
                     listings.Add(new PakListing(pakList, mod.Name));
                 }
                 else
                 {
-                    console.WriteLine($"Not Found:{mod.FullName}");
+                    logger.LogWarning("Not Found:{file}", mod.FullName);
                 }
             }
 
             foreach (var listing in listings)
             foreach (var pakedFile in listing.pakedFiles)
                 if (pakedFile.path.Contains(SearchPattern))
-                    console.WriteLine(listing.pakName);
+                    logger.LogInformation(listing.pakName);
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to find mod");
+            return ex.GetErrorCode();
         }
 
         return 0;

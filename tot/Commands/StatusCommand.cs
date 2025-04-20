@@ -1,15 +1,14 @@
 ﻿using System.CommandLine;
-using System.Runtime.InteropServices;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class StatusCommand(IColoredConsole console, KitchenClerk clerk, KitchenFiles files) : IInvokableCommand<StatusCommand>
+public class StatusCommand(ILogger<StatusCommand> logger, IConsole console, KitchenClerk clerk, KitchenFiles files) : IInvokableCommand<StatusCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<StatusCommand>("status", "List the content of the cookinfo.ini with file status")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.Create<bool>("--raw", "Display the raw list of the cookinfo.ini").AddAlias("-r")
@@ -38,9 +37,10 @@ public class StatusCommand(IColoredConsole console, KitchenClerk clerk, KitchenF
             await ExecuteFriendly();
             return 0;
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to build status report");
+            return ex.GetErrorCode();
         }
     }
 
@@ -139,25 +139,29 @@ public class StatusCommand(IColoredConsole console, KitchenClerk clerk, KitchenF
                 console.Write("Other:" + file.PosixFullName() + " [");
 
             if (includedDir.TryGetValue(dir, out var value))
-                console.Write(ConsoleColor.Green, $"+{value.Count}");
+                console.Write($"+{value.Count}");
             if (excludedDir.TryGetValue(dir, out var value1))
-                console.Write(ConsoleColor.Red, $"-{value1.Count}");
+                console.Write($"-{value1.Count}");
             if (absentDir.TryGetValue(dir, out var value2))
-                console.Write(ConsoleColor.Yellow, $"!{value2.Count}");
+                console.Write($"!{value2.Count}");
             if (notFounDir.TryGetValue(dir, out var value3))
-                console.Write(ConsoleColor.Magenta, $"?{value3.Count}");
+                console.Write($"?{value3.Count}");
             console.Write("]\n");
 
             if (!string.IsNullOrEmpty(filter))
             {
                 if (includedDir.TryGetValue(dir, out var value4))
-                    console.WriteLines(ConsoleColor.Green, [.. value4]);
+                    foreach (var v in value4)
+                        console.WriteLine($"+{v}");
                 if (excludedDir.TryGetValue(dir, out var value5))
-                    console.WriteLines(ConsoleColor.Red, [.. value5]);
+                    foreach (var v in value5)
+                        console.WriteLine($"-{v}");
                 if (absentDir.TryGetValue(dir, out var value6))
-                    console.WriteLines(ConsoleColor.Yellow, [.. value6]);
+                    foreach (var v in value6)
+                        console.WriteLine($"!{v}");
                 if (notFounDir.TryGetValue(dir, out var value7))
-                    console.WriteLines(ConsoleColor.Magenta, [.. value7]);
+                    foreach (var v in value7)
+                        console.WriteLine($"?{v}");
             }
         }
     }

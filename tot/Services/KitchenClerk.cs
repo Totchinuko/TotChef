@@ -3,13 +3,14 @@ using System.CommandLine.IO;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using Tot;
 using Tot.Commands;
 
 namespace tot.Services;
 
-public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, IColoredConsole console) : ITotService
+public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ILogger<KitchenClerk> logger) : ITotService
 {
     public void CleanCookedFolder()
     {
@@ -71,7 +72,7 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
 
             if (!validFiles.Contains(localFile))
             {
-                console.WriteLine($"Ignoring:{file}");
+                logger.LogWarning("Ignoring:{file}", file);
                 continue;
             }
 
@@ -81,16 +82,16 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
             FileInfo to = new(Path.Join(files.ModCookedFolder.FullName, localFile) + Path.GetExtension(file));
             if (to.Directory == null)
             {
-                console.WriteLine($"Ignoring:{file}");
+                logger.LogWarning("Ignoring:{file}", file);
                 continue;
             }
 
             if (verbose)
-                console.WriteLine("Copy:" + from.FullName);
+                logger.LogInformation("Copy:{file}", from.FullName);
 
             Directory.CreateDirectory(to.Directory.FullName);
             if (to.Exists)
-                throw new CommandException(
+                throw new Exception(
                     $"Could not copy the following file, already exists\n{to.FullName}");
 
             from.CopyTo(to.FullName, true);
@@ -99,8 +100,8 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
         if (checkedFiles.Count != validFiles.Count)
         {
             foreach (var file in validFiles.Except(checkedFiles))
-                console.Error.WriteLine("Error:" + file);
-            throw new CommandException("CookInfos contain invalid files");
+                logger.LogError("Error:{file}",file);
+            throw new Exception("CookInfos contain invalid files");
         }
     }
 
@@ -149,7 +150,7 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
         if (infos.RevisionNumber == devkit.Revision && infos.SnapshotId == devkit.SnapshotId) return;
         
         if (await git.IsGitRepoInvalidOrDirty(files.ModFolder))
-            throw new CommandException(CommandCode.RepositoryIsDirty, "Mod repository is dirty");
+            throw new Exception("Mod repository is dirty");
 
         infos.RevisionNumber = devkit.Revision;
         infos.SnapshotId = devkit.SnapshotId;
@@ -165,7 +166,7 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
         if (!config.AutoBumpBuild) return;
 
         if (await git.IsGitRepoInvalidOrDirty(files.ModFolder))
-            throw new CommandException(CommandCode.RepositoryIsDirty, "Mod repository is dirty");
+            throw new Exception("Mod repository is dirty");
         var data = await files.GetModInfos();
         
         data.VersionBuild += 1;
@@ -186,7 +187,7 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
         var regex = new Regex(@"([0-9]+)\.([0-9]+)");
         var result = regex.Match(content);
         if (!result.Success)
-            throw new CommandException("Version is invalid");
+            throw new Exception("Version is invalid");
         return new DevKitVersion
         {
             Revision = int.Parse(result.Groups[1].Value),
@@ -197,7 +198,7 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
     public async Task<string> QueryPakFile(FileInfo file)
     {
         if (!file.Exists)
-            throw CommandCode.NotFound(file);
+            throw new FileNotFoundException($"File not found: {file}");
 
         var p = new Process();
         p.StartInfo.UseShellExecute = false;
@@ -256,7 +257,7 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ICo
     public List<string> UpdateIncludedCookInfo(DirectoryInfo directory, CookInfos cookInfos)
     {
         if (!directory.Exists)
-            throw CommandCode.NotFound(directory);
+            throw new DirectoryNotFoundException($"Directory not found: {directory}");
 
         string[] fileList
             = Directory.GetFiles(directory.FullName, $"*{Constants.UAssetExt}", SearchOption.AllDirectories);

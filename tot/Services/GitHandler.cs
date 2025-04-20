@@ -1,4 +1,5 @@
-﻿using tot_lib;
+﻿using Microsoft.Extensions.Logging;
+using tot_lib;
 using tot_lib.Git;
 using tot_lib.Git.Models;
 using Tot;
@@ -20,13 +21,13 @@ public class GitHandler : ITotService
     {
         var repo = directory.FullName;
         if (!await IsRepositoryValid(repo))
-            throw new CommandException(CommandCode.RepositoryInvalid, "Invalid repository");
+            throw new Exception("Invalid repository");
         if (await HasAnyStagedChanges(repo))
-            throw new CommandException(CommandCode.RepositoryIsDirty, "Repository is dirty");
+            throw new Exception("Repository is dirty");
         
         var localFile = file.FullName.RemoveRootFolder(directory.FullName).PosixFullName();
         if (!await StageFile(repo, localFile))
-            throw new CommandException($"Could not stage {localFile}");
+            throw new Exception($"Could not stage {localFile}");
         await Commit(repo, message, false);
     }
 
@@ -45,24 +46,24 @@ public class GitHandler : ITotService
     {
         var repo = _files.ModsShared.FullName;
         if (!await IsRepositoryValid(repo))
-            throw new CommandException($"Invalid repository {repo}");
+            throw new Exception($"Invalid repository {repo}");
 
         var branches = await GetReposBranches(repo);
         var branch = branches.FirstOrDefault(b => b.FriendlyName == _files.ModName);
         branch ??= branches.FirstOrDefault(b => b.FriendlyName == "master");
         
         if (branch == null)
-            throw new CommandException("Invalid ModsShared repository branches");
+            throw new Exception("Invalid ModsShared repository branches");
 
         var worktree = await GetCurrentWorktree();
         if (worktree.Branch == branch.Name)
             return branch.FriendlyName;
 
         if (await IsGitRepoInvalidOrDirty(_files.ModsShared))
-            throw new CommandException(CommandCode.RepositoryIsDirty, "ModsShared Repository is dirty");
+            throw new Exception("ModsShared Repository is dirty");
 
         if(!await Checkout(repo, branch.Name))
-            throw new CommandException($"Could not checkout {branch.FriendlyName}");
+            throw new Exception($"Could not checkout {branch.FriendlyName}");
         return branch.FriendlyName;
     }
 
@@ -81,9 +82,9 @@ public class GitHandler : ITotService
         var query = new Worktree(_files.ModsShared.FullName);
         var results = await Task.Run(query.List);
         if(results.Count == 0)
-            throw new CommandException("No worktree found");
+            throw new Exception("No worktree found");
         if(results.Count > 1)
-            throw new CommandException("Multiple worktrees is unsupported");
+            throw new Exception("Multiple worktrees is unsupported");
         return results.First();
     }
 

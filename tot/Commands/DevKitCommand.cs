@@ -1,13 +1,14 @@
 ﻿using System.CommandLine;
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class DevKitCommand(GitHandler git, IColoredConsole console, KitchenFiles files) : IInvokableCommand<DevKitCommand>
+public class DevKitCommand(GitHandler git, IConsole console, ILogger<DevKitCommand> logger, KitchenFiles files) : IInvokableCommand<DevKitCommand>
 {
     public static Command Command = CommandBuilder
         .CreateInvokable<DevKitCommand>("devkit", "Open the devkit for the targeted mod")
@@ -32,9 +33,10 @@ public class DevKitCommand(GitHandler git, IColoredConsole console, KitchenFiles
             Process.Start(files.Ue4Editor.FullName,
                 string.Join(" ", files.UProject.FullName, string.Join(" ", Constants.EditorArgs)));
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to open devkit");
+            return ex.GetErrorCode();
         }
 
         return 0;

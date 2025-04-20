@@ -1,14 +1,14 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class SwapCommand(KitchenFiles files, KitchenClerk clerk, IColoredConsole console) : IInvokableCommand<SwapCommand>
+public class SwapCommand(KitchenFiles files, KitchenClerk clerk, ILogger<SwapCommand> logger) : IInvokableCommand<SwapCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<SwapCommand>("swap", "Swap files in the cookinfo.ini")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.Create<bool>("--exclude", "Swap files to the exclude list").AddAlias("-e")
@@ -61,7 +61,7 @@ public class SwapCommand(KitchenFiles files, KitchenClerk clerk, IColoredConsole
             {
                 var fileInfo = new FileInfo(filter);
                 if (fileInfo.Directory == null || !fileInfo.Directory.Exists)
-                    throw CommandCode.NotFound(fileInfo);
+                    throw new FileNotFoundException($"File not found: {fileInfo.FullName}");
                 var fileList = Directory.GetFiles(fileInfo.Directory.FullName,
                     filter.Substring(fileInfo.Directory.FullName.Length + 1),
                     Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).ToList();
@@ -73,17 +73,18 @@ public class SwapCommand(KitchenFiles files, KitchenClerk clerk, IColoredConsole
             }
             else
             {
-                throw new CommandException($"Invalid filter {filter}");
+                throw new Exception($"Invalid filter {filter}");
             }
 
             await clerk.SetCookInfo(cookInfo);
 
             foreach (var addedFile in added)
-                console.WriteLine(Exclude ? "-" : "+" + addedFile);
+                logger.LogInformation(Exclude ? "-" : "+" + addedFile);
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to swap files");
+            return ex.GetErrorCode();
         }
 
         return 0;

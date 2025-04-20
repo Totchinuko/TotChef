@@ -13,8 +13,7 @@
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <Deterministic>true</Deterministic>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-        <PublishAot>true</PublishAot>
-        <PublishTrimmed>true</PublishTrimmed>
+        <PublishReadyToRun>true</PublishReadyToRun>
 
         <Description>CLI tool for Conan Exile Modding</Description>
         <PackageProjectUrl>https://github.com/Totchinuko/TotChef.git</PackageProjectUrl>
@@ -35,6 +34,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Serilog" Version="4.2.0" />
+        <PackageReference Include="Serilog.Expressions" Version="5.0.0" />
+        <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.1" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1"/>
     </ItemGroup>
 

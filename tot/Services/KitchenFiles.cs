@@ -103,10 +103,9 @@ public class KitchenFiles(Config config) : ITotService
         if (IsDevkitPathValid())
             _modName = string.IsNullOrEmpty(name) ? GetCurrentDirectoryMod() ?? "" : name;
         else
-            throw new CommandException(CommandCode.DirectoryNotFound,
-                "Devkit directory could not be found, make sure the configuration is correct");
+            throw new Exception("Devkit directory could not be found, make sure the configuration is correct");
         if (!IsModPathValid())
-            throw new CommandException(CommandCode.DirectoryNotFound, $"Mod not found {_modName}");
+            throw new Exception($"Mod not found {_modName}");
     }
 
     public async Task<string[]> GetCookInfos()
@@ -133,7 +132,7 @@ public class KitchenFiles(Config config) : ITotService
 
     public void CreateActive()
     {
-        if (!IsModPathValid()) throw CommandCode.NotFound(ModFolder);
+        if (!IsModPathValid()) throw new DirectoryNotFoundException($"Directory not found:{ModFolder}");
         var file = new FileInfo(Path.Join(ModsFolder.FullName, _modName, Constants.ActiveFile))
             .GetProperCasedFileInfo();
         File.WriteAllText(file.FullName, "");
@@ -141,7 +140,7 @@ public class KitchenFiles(Config config) : ITotService
 
     public void DeleteAnyActive()
     {
-        if (!ModsFolder.Exists) throw CommandCode.NotFound(ModFolder);
+        if (!ModsFolder.Exists) throw  new DirectoryNotFoundException($"Directory not found:{ModFolder}");
 
         foreach (var dir in ModsFolder.GetDirectories())
         {
@@ -175,7 +174,7 @@ public class KitchenFiles(Config config) : ITotService
         if (ModPakFile.Exists)
         {
             if (!HasWriteAccess(ModPakFile))
-                throw new CommandException(CommandCode.FileLocked, $"File is locked:{ModPakFile.FullName}");
+                throw new Exception($"File is locked:{ModPakFile.FullName}");
             
             if (ModPakFileBackup.Exists)
                 ModPakFileBackup.Delete();
@@ -203,7 +202,7 @@ public class KitchenFiles(Config config) : ITotService
     public async Task<string> CreateTemporaryTextFile(string content)
     {
         var file = new FileInfo(Path.GetTempFileName());
-        if (file.Directory == null) throw new CommandException("Cannot create temporary text file");
+        if (file.Directory == null) throw new Exception("Cannot create temporary text file");
 
         Directory.CreateDirectory(file.Directory.FullName);
         await File.WriteAllTextAsync(file.FullName, content);
@@ -213,7 +212,7 @@ public class KitchenFiles(Config config) : ITotService
 
     public bool IsDevkitPathValid()
     {
-        return !string.IsNullOrEmpty(config?.DevKitPath) && Ue4Cmd.Exists;
+        return !string.IsNullOrEmpty(config.DevKitPath) && Ue4Cmd.Exists;
     }
 
     public bool IsModPathValid()

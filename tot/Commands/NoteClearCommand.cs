@@ -1,29 +1,30 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class NoteClearCommand(PatchHandler handler, IColoredConsole console) : IInvokableCommand<NoteClearCommand>
+public class NoteClearCommand(PatchHandler handler, ILogger<NoteClearCommand> logger) : IInvokableCommand<NoteClearCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<NoteClearCommand>("clear", "Clear the current patch note")
         .SetServiceConfiguration(Program.ConfigureServices)
         .BuildCommand();
     
-    public async Task<int> InvokeAsync(CancellationToken token)
+    public Task<int> InvokeAsync(CancellationToken token)
     {
         try
         {
             handler.DeleteCurrentPatchNote();
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to clear note");
+            return Task.FromResult(ex.GetErrorCode());
         }
 
-        return 0;
+        return Task.FromResult(0);
     }
 }

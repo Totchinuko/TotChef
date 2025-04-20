@@ -1,15 +1,14 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class CleanCommand(KitchenClerk clerk, KitchenFiles files, IColoredConsole console) : IInvokableCommand<CleanCommand>
+public class CleanCommand(KitchenClerk clerk, KitchenFiles files, ILogger<CleanCommand> logger) : IInvokableCommand<CleanCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<CleanCommand>("clean", "Clean any missing file from the cookinfo.ini")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.AddModName((c, v) => c.ModName = v)
@@ -29,9 +28,10 @@ public class CleanCommand(KitchenClerk clerk, KitchenFiles files, IColoredConsol
                 Console.WriteLine(file);
             Console.WriteLine($"{changes.Count} missing file(s) removed from {files.ModName} cookinfo.ini");
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Clean Failed");
+            return ex.GetErrorCode();
         }
 
         return 0;

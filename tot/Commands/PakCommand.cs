@@ -1,15 +1,15 @@
 ﻿using System.CommandLine;
 using System.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class PakCommand(KitchenFiles files, IColoredConsole console) : IInvokableCommand<PakCommand>
+public class PakCommand(KitchenFiles files, ILogger<PakCommand> logger) : IInvokableCommand<PakCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<PakCommand>("pak", "Pak the previously cooked files")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.Create<bool>("--compress", "Compress the files to reduce the final mod size").AddAlias("-c")
@@ -32,7 +32,7 @@ public class PakCommand(KitchenFiles files, IColoredConsole console) : IInvokabl
                 if (!file.Name.StartsWith(".") && file.Name != "active.txt")
                     file.CopyTo(Path.Join(files.ModCookedFolder.FullName, file.Name), true);
 
-            console.WriteLine($"Paking {files.ModName}..");
+            logger.LogInformation($"Paking {files.ModName}..");
             var p = Process.Start(
                 files.UnrealPak.FullName,
                 string.Join(" ",
@@ -42,11 +42,12 @@ public class PakCommand(KitchenFiles files, IColoredConsole console) : IInvokabl
                 ));
             await p.WaitForExitAsync(token);
             if(!p.HasExited) p.Kill();
-            console.WriteLine($"{files.ModName} has been paked successfully.. !");
+            logger.LogInformation($"{files.ModName} has been paked successfully.. !");
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to pak");
+            return ex.GetErrorCode();
         }
 
         return 0;

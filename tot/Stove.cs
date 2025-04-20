@@ -2,20 +2,21 @@
 using System.CommandLine.IO;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot.Services;
 
 namespace Tot;
 
-public class Stove
+public partial class Stove
 {
-    private readonly IColoredConsole _console;
+    private readonly ILogger<Stove> _logger;
     private readonly Process _process;
     private bool _verbose;
 
-    public Stove(KitchenFiles kitchenFiles, IColoredConsole console)
+    public Stove(KitchenFiles kitchenFiles, ILogger<Stove> logger)
     {
-        _console = console;
+        _logger = logger;
         _process = new Process();
         _process.StartInfo.UseShellExecute = false;
         _process.StartInfo.RedirectStandardOutput = true;
@@ -63,10 +64,50 @@ public class Stove
             Warnings = int.Parse(match.Groups[4].Value);
         }
 
-        match = Regex.Match(line, "^([0-9\\.\\-\\:\\[\\]\\s]+)LogInit:Display: LogBlueprint:Error:");
-        if (match.Success)
-            _console.Error.WriteLine(line);
-        else if (_verbose)
-            _console.WriteLines(ConsoleColor.DarkGray, line);
+        ParseAndSend(line);
     }
+    
+    private void ParseAndSend(string output)
+    {
+        var lines = output.Trim().Split(["\r\n", "\r", "\n"], StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            var matches = LogRegex().Match(line);
+            if (!matches.Success)
+            {
+                _logger.LogInformation(line);
+                continue;
+            }
+            
+            //var date = ParseDate(matches.Groups[1].Value);
+            var source = matches.Groups[3].Value.Trim();
+            var level = ParseLogLevel(matches.Groups[4].Value);
+            var content = matches.Groups[5].Value;
+            _logger.Log(level, "{source}: {content}", source, content);
+        }
+    }
+    
+    //Fatal, Error, Warning, Display, Log, Verbose, VeryVerbose, All (=VeryVerbose)
+    private LogLevel ParseLogLevel(string data)
+    {
+        data = data.ToLower().Trim();
+        switch (data)
+        {
+            case "fatal":
+                return LogLevel.Critical;
+            case "error":
+                return LogLevel.Error;
+            case "warning":
+                return LogLevel.Warning;
+            case "display":
+            case "log":
+                return LogLevel.Information;
+            default:
+                return LogLevel.Information;
+        }
+    }
+    
+    //regexr /^\[([0-9\.\-\:]+)\]\[([0-9\s]+)\]([\w\s]+):(?:([\w\s]+):)?(.+)/
+    [GeneratedRegex("^\\[([0-9\\.\\-\\:]+)\\]\\[([0-9\\s]+)\\]([\\w\\s]+):(?:([\\w\\s]+):)?(.+)")]
+    private static partial Regex LogRegex();
 }

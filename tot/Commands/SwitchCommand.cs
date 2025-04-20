@@ -1,14 +1,14 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class SwitchCommand(KitchenFiles files, IColoredConsole console) : IInvokableCommand<SwitchCommand>
+public class SwitchCommand(KitchenFiles files, ILogger<SwitchCommand> logger) : IInvokableCommand<SwitchCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<SwitchCommand>("switch", "Switch the active.txt to the selected mod")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.AddModName((c,v) => c.ModName = v)
@@ -16,7 +16,7 @@ public class SwitchCommand(KitchenFiles files, IColoredConsole console) : IInvok
     
     public string ModName { get; set; } = string.Empty;
 
-    public async Task<int> InvokeAsync(CancellationToken token)
+    public Task<int> InvokeAsync(CancellationToken token)
     {
         try
         {
@@ -24,13 +24,14 @@ public class SwitchCommand(KitchenFiles files, IColoredConsole console) : IInvok
 
             files.DeleteAnyActive();
             files.CreateActive();
-            console.WriteLine($"{files.ModName} is now active");
+            logger.LogInformation("{mod} is now active", files.ModName);
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to switch");
+            return Task.FromResult(ex.GetErrorCode());
         }
 
-        return 0;
+        return Task.FromResult(0);
     }
 }

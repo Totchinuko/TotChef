@@ -1,14 +1,14 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class GhostCommand(IColoredConsole console, KitchenFiles files) : IInvokableCommand<GhostCommand>
+public class GhostCommand(ILogger<GhostCommand> logger, KitchenFiles files) : IInvokableCommand<GhostCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<GhostCommand>("ghost", "List invalid files and clean them")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.AddModName((c,v) => c.ModName = v)
@@ -28,7 +28,7 @@ public class GhostCommand(IColoredConsole console, KitchenFiles files) : IInvoka
             List<string> fileList = Directory.GetFiles(files.ModFolder.FullName, "*.*", SearchOption.AllDirectories)
                 .ToList();
 
-            console.WriteLine("Invalid files:");
+            logger.LogInformation("Invalid files:");
             foreach (var file in fileList)
             {
                 var info = new FileInfo(file);
@@ -36,14 +36,15 @@ public class GhostCommand(IColoredConsole console, KitchenFiles files) : IInvoka
                 if (info.Length >= 4 * 1024) continue;
                 var contain = await files.FileContain(info, "ObjectRedirector");
                 if (!contain && info.Length >= 1024) continue;
-                console.WriteLine($"{file}");
+                logger.LogInformation("{file}", file);
                 if (Cleanup)
                     info.Delete();
             }
         }
-        catch(CommandException ex)
+        catch(Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to scan files");
+            return ex.GetErrorCode();
         }
         
         return 0;

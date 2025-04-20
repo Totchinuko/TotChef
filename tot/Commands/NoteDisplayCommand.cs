@@ -1,15 +1,15 @@
 ﻿using System.CommandLine;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class NoteDisplayCommand(Config config, PatchHandler handler, IColoredConsole console) : IInvokableCommand<NoteDisplayCommand>
+public class NoteDisplayCommand(Config config, PatchHandler handler, IConsole console, ILogger<NoteDisplayCommand> logger) : IInvokableCommand<NoteDisplayCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<NoteDisplayCommand>("display", "Display the current patch note")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.Create<bool>("--in-editor", "Display in an editor like vim or nano instead of console output")
@@ -25,7 +25,7 @@ public class NoteDisplayCommand(Config config, PatchHandler handler, IColoredCon
         {
             if (!await handler.PatchNoteExists())
             {
-                console.WriteLine(ConsoleColor.Red, "Patch note is empty");
+                logger.LogError("Patch note is empty");
                 return 1;
             }
             
@@ -50,11 +50,12 @@ public class NoteDisplayCommand(Config config, PatchHandler handler, IColoredCon
                 return 0;
             }
             
-            console.WriteLines(builder.ToString().Split(Environment.NewLine));
+            console.Write(builder.ToString());
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to display note");
+            return ex.GetErrorCode();
         }
 
         return 0;

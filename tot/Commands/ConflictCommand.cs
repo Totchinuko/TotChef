@@ -1,18 +1,19 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class ConflictCommand(IColoredConsole console, KitchenClerk clerk) : IInvokableCommand<ConflictCommand>
+public class ConflictCommand(IConsole console, ILogger<ConflictCommand> logger, KitchenClerk clerk) : IInvokableCommand<ConflictCommand>
 {
     public static Command Command = CommandBuilder
         .CreateInvokable<ConflictCommand>("conflict", "Process a mod list to highlight common files")
         .SetServiceConfiguration(Program.ConfigureServices)
-        .Arguments.Create<string>()
+        .Arguments.Create<string>("path")
         .AddSetter((c, v) => c.Path = v ?? string.Empty)
         .BuildArgument()
         .BuildCommand();
@@ -22,7 +23,10 @@ public class ConflictCommand(IColoredConsole console, KitchenClerk clerk) : IInv
     public async Task<int> InvokeAsync(CancellationToken token)
     {
         if (string.IsNullOrEmpty(Path))
-            return await console.OutputCommandError(CommandCode.MissingArg(nameof(Path)));
+        {
+            logger.LogError("Missing argument {arg}", "path");
+            return 1;
+        }
 
         var modlistFile = new FileInfo(Path).GetProperCasedFileInfo();
         var modlist = (await File.ReadAllLinesAsync(modlistFile.FullName, token)).ToList();
@@ -38,21 +42,22 @@ public class ConflictCommand(IColoredConsole console, KitchenClerk clerk) : IInv
                 var mod = new FileInfo(path);
                 if (mod.Exists)
                 {
-                    console.WriteLine($"Parsing:{mod.FullName}");
+                    logger.LogInformation("Parsing:{file}", mod.FullName);
                     var pakOut = await clerk.QueryPakFile(mod);
                     listings.Add(new PakListing(pakOut, mod.Name));
                 }
                 else
                 {
-                    console.WriteLine($"Not Found:{mod.FullName}");
+                    logger.LogWarning("Not Found:{file}", mod.FullName);
                 }
             }
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Conflict scan failed");
         }
 
+        logger.LogInformation("Report:");
         var folded = new Dictionary<string, List<PakedFile>>();
         foreach (var listing in listings)
         foreach (var pakedFile in listing.pakedFiles)
@@ -67,7 +72,7 @@ public class ConflictCommand(IColoredConsole console, KitchenClerk clerk) : IInv
 
             if (keyValuePair.Value.Count > 1 && !keyValuePair.Value.AreShaIdentical())
             {
-                Console.WriteLine(keyValuePair.Value[0].path);
+                console.WriteLine(keyValuePair.Value[0].path);
                 foreach (var pakedFile in keyValuePair.Value)
                     console.WriteLine($"{pakedFile.sha} - {pakedFile.pakName} ({pakedFile.size} bytes)");
             }

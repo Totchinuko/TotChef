@@ -1,13 +1,12 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.DependencyInjection;
-using tot_lib;
+using Microsoft.Extensions.Logging;
 using tot_lib.CommandLine;
 
 namespace Tot.Commands;
 
-public class ConfigGetCommand(IColoredConsole console, Config config) : IInvokableCommand<ConfigGetCommand>
+public class ConfigGetCommand(IConsole console, ILogger<ConfigGetCommand> logger, Config config) : IInvokableCommand<ConfigGetCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<ConfigGetCommand>("get", "get the value of a config")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Arguments.Create<string>("key", "Key of the config to interact with")
@@ -19,7 +18,10 @@ public class ConfigGetCommand(IColoredConsole console, Config config) : IInvokab
     public Task<int> InvokeAsync(CancellationToken token)
     {
         if (string.IsNullOrEmpty(Key))
-            return console.OutputCommandError(CommandCode.MissingArg("key"));
+        {
+            logger.LogCritical("Missing argument {arg}", "key");
+            return Task.FromResult(1);
+        }
         console.WriteLine(config.GetValue(Key));
         return Task.FromResult(0);
     }

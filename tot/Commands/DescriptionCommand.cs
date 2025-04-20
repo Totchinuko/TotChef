@@ -1,15 +1,14 @@
 ﻿using System.CommandLine;
-using System.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class DescriptionCommand(KitchenFiles files, Config config, IColoredConsole console, GitHandler git) : IInvokableCommand<DescriptionCommand>
+public class DescriptionCommand(KitchenFiles files, Config config, ILogger<DescriptionCommand> logger, GitHandler git) : IInvokableCommand<DescriptionCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<DescriptionCommand>("description", "Edit the mod description")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.AddModName((c, v) => c.ModName = v)
@@ -33,13 +32,14 @@ public class DescriptionCommand(KitchenFiles files, Config config, IColoredConso
                 return 0;
 
             modInfos.Description = description;
-            console.WriteLine("Commiting changes");
+            logger.LogInformation("Commiting changes");
             await files.SetModInfos(modInfos);
             await git.CommitFile(files.ModFolder, files.ModCookInfo, Constants.GitCommitDescriptionMessage);
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Description edit failed");
+            return ex.GetErrorCode();
         }
 
         return 0;

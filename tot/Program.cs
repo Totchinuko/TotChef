@@ -1,14 +1,15 @@
 ﻿using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Parsing;
 using Microsoft.Extensions.DependencyInjection;
-using tot_lib;
+using Serilog;
+using Serilog.Core;
+using Serilog.Templates;
+using Serilog.Templates.Themes;
 using Tot.Commands;
 using tot.Services;
 
 namespace Tot;
 
-internal class Program
+internal static class Program
 {
     static async Task<int> Main(string[] args)
     {
@@ -23,6 +24,7 @@ internal class Program
         rootCommand.AddCommand(ListCommand.Command);
         rootCommand.AddCommand(OpenCommand.Command);
         rootCommand.AddCommand(PakCommand.Command);
+        rootCommand.AddCommand(GhostCommand.Command);
         rootCommand.AddCommand(PathCommand.Command);
         rootCommand.AddCommand(SearchCommand.Command);
         rootCommand.AddCommand(StatusCommand.Command);
@@ -37,12 +39,25 @@ internal class Program
 
     public static void ConfigureServices(IServiceCollection services)
     {
-        services.AddSingleton<IColoredConsole>(Console.IsOutputRedirected ? new ColorlessConsole() : new DotnetConsole());
+        services.AddLogging(builder => builder.AddSerilog(GetLogger(), true));
         services.AddSingleton(Config.LoadConfig());
         services.AddSingleton<KitchenFiles>();
         services.AddSingleton<KitchenClerk>();
         services.AddSingleton<GitHandler>();
         services.AddSingleton<Stove>();
         services.AddSingleton<PatchHandler>();
+    }
+
+    public static Logger GetLogger()
+    {
+        return new LoggerConfiguration()
+#if !DEBUG
+            .MinimumLevel.Information()
+#endif
+            .WriteTo.Console(new ExpressionTemplate(
+                "[{@t:HH:mm:ss} {@l:u3}] {@m}\n{@x}",
+                theme: TemplateTheme.Code
+                ))
+            .CreateLogger();
     }
 }

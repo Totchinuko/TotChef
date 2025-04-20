@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-using System.Reflection;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using tot_lib;
 
@@ -14,13 +12,7 @@ public partial class ConfigJsonContext : JsonSerializerContext
 
 public class Config : ITotService
 {
-
-    public Config()
-    {
-        DevKitPath = "";
-    }
-
-    public string DevKitPath { get; set; }
+    public string DevKitPath { get; set; } = "";
 
     public string GitBinary { get; set; } = "git";
 
@@ -32,7 +24,7 @@ public class Config : ITotService
 
     public static Config LoadConfig()
     {
-        var configPath = GetConfigPath() ?? "";
+        var configPath = GetConfigPath();
         var json = "";
         if (File.Exists(configPath))
             try
@@ -53,7 +45,7 @@ public class Config : ITotService
     public void SaveConfig()
     {
         var json = JsonSerializer.Serialize(this, ConfigJsonContext.Default.Config);
-        var configPath = GetConfigPath() ?? "";
+        var configPath = GetConfigPath();
         var directory = Path.GetDirectoryName(configPath);
         if(directory is null)
             throw new DirectoryNotFoundException(directory);
@@ -61,7 +53,7 @@ public class Config : ITotService
         File.WriteAllText(configPath, json);
     }
 
-    private static string? GetConfigPath()
+    private static string GetConfigPath()
     {
         var directory = typeof(Config).GetStandardFolder(Environment.SpecialFolder.ApplicationData);
         return Path.Combine(directory.FullName, Constants.ConfigFileName);
@@ -76,7 +68,7 @@ public class Config : ITotService
                 break;
             case nameof(AutoBumpBuild):
                 if (!bool.TryParse(value, out var b))
-                    throw new CommandException(CommandCode.MissingArgument, "Invalid value for AutoBumpBuild");
+                    throw new Exception("Invalid value for AutoBumpBuild");
                 AutoBumpBuild = b;
                 break;
             case nameof(DefaultCliEditor):
@@ -86,7 +78,7 @@ public class Config : ITotService
                 GitBinary = value;
                 break;
             default:
-                throw new CommandException(CommandCode.MissingArgument, $"Invalid key: {key}");
+                throw new Exception($"Invalid key: {key}");
         }
     }
 
@@ -109,7 +101,7 @@ public class Config : ITotService
             nameof(AutoBumpBuild) => AutoBumpBuild.ToString(),
             nameof(DefaultCliEditor) => DefaultCliEditor,
             nameof(GitBinary) => GitBinary,
-            _ => throw new CommandException(CommandCode.MissingArgument, $"Invalid key: {key}")
+            _ => throw new Exception($"Invalid key: {key}")
         };
     }
 }

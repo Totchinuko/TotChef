@@ -1,30 +1,31 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class PathModCommand(KitchenFiles files, IColoredConsole console) : IInvokableCommand<PathModCommand>
+public class PathModCommand(KitchenFiles files, IConsole console, ILogger<PathModCommand> logger) : IInvokableCommand<PathModCommand>
 {
-    public static Command Command = CommandBuilder
+    public static readonly Command Command = CommandBuilder
         .CreateInvokable<PathModCommand>("mod", "Print out the path of a mod")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Arguments.Create<string>("mod-name").AddSetter((c, v) => c.ModName = v ?? string.Empty).BuildArgument()
         .BuildCommand();
     public string ModName { get; set; } = string.Empty;
-    public async Task<int> InvokeAsync(CancellationToken token)
+    public Task<int> InvokeAsync(CancellationToken token)
     {
         try
         {
             files.SetModName(ModName);
             console.Write(files.ModFolder.PosixFullName());
-            return 0;
+            return Task.FromResult(0);
         }
-        catch (CommandException ex)
+        catch (Exception ex)
         {
-            return await console.OutputCommandError(ex);
+            logger.LogCritical(ex, "Failed to find mod");
+            return Task.FromResult(ex.GetErrorCode());
         }
     }
 }
