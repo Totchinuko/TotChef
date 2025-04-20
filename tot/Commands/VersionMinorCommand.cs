@@ -1,33 +1,28 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class VersionMinorCommand : ITotCommand, ITotCommandInvoked, ITotCommandOptions
+public class VersionMinorCommand(KitchenFiles files, GitHandler git, IColoredConsole console) : IInvokableCommand<VersionMinorCommand>
 {
-    public string Command => "minor";
-    public string Description => "Increment the minor version";
+    public static Command Command = CommandBuilder
+        .CreateInvokable<VersionMinorCommand>("minor", "Increment the minor version")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Options.AddModName((c,v) => c.ModName = v)
+        .BuildCommand();
     
     public string ModName { get; set; } = string.Empty;
 
-    public IEnumerable<Option> GetOptions()
+    public async Task<int> InvokeAsync(CancellationToken token)
     {
-        yield return Utils.GetModNameOption(x => ModName = x);
-    }
-    
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
-    {
-        var kFiles = provider.GetRequiredService<KitchenFiles>();
-        var git = provider.GetRequiredService<GitHandler>();
-        var console = provider.GetRequiredService<IColoredConsole>();
-
         try
         {
-            kFiles.SetModName(ModName);
+            files.SetModName(ModName);
 
-            var modInfos = await kFiles.GetModInfos();
+            var modInfos = await files.GetModInfos();
 
             modInfos.VersionMinor++;
             modInfos.VersionBuild = 0;
@@ -36,8 +31,8 @@ public class VersionMinorCommand : ITotCommand, ITotCommandInvoked, ITotCommandO
             modInfos.Name = regex.Replace(modInfos.Name,
                 $"{modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
             console.WriteLine(modInfos.Name);
-            await kFiles.SetModInfos(modInfos);
-            await git.CommitFile(kFiles.ModFolder, kFiles.ModInfo,
+            await files.SetModInfos(modInfos);
+            await git.CommitFile(files.ModFolder, files.ModInfo,
                 string.Format(
                     Constants.GitCommitVersionMessage, 
                     modInfos.VersionMajor, modInfos.VersionMinor, modInfos.VersionBuild));

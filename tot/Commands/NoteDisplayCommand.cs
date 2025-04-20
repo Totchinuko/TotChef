@@ -2,31 +2,25 @@
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class NoteDisplayCommand : ITotCommand, ITotCommandOptions, ITotCommandInvoked
+public class NoteDisplayCommand(Config config, PatchHandler handler, IColoredConsole console) : IInvokableCommand<NoteDisplayCommand>
 {
-    public string Command => "display";
-    public string Description => "Display the current patch note";
+    public static Command Command = CommandBuilder
+        .CreateInvokable<NoteDisplayCommand>("display", "Display the current patch note")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Options.Create<bool>("--in-editor", "Display in an editor like vim or nano instead of console output")
+        .AddAlias("-e")
+        .AddSetter((c,v) => c.DisplayInEditor = v).BuildOption()
+        .BuildCommand();
+
     public bool DisplayInEditor { get; set; }
     
-    public IEnumerable<Option> GetOptions()
+    public async Task<int> InvokeAsync(CancellationToken token)
     {
-        var displayInEditor = new TotOption<bool>("--in-editor",
-            "Display in an editor like vim or nano instead of console output");
-        displayInEditor.AddAlias("-e");
-        displayInEditor.AddSetter((v) => DisplayInEditor = v);
-        yield return displayInEditor;
-    }
-    
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
-    {
-        var config = provider.GetRequiredService<Config>();
-        var handler = provider.GetRequiredService<PatchHandler>();
-        var console = provider.GetRequiredService<IColoredConsole>();
-
         try
         {
             if (!await handler.PatchNoteExists())
@@ -65,5 +59,4 @@ public class NoteDisplayCommand : ITotCommand, ITotCommandOptions, ITotCommandIn
 
         return 0;
     }
-    
 }

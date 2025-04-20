@@ -1,33 +1,27 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class SearchCommand : ITotCommand, ITotCommandArguments, ITotCommandInvoked
+public class SearchCommand(IColoredConsole console, KitchenClerk clerk) : IInvokableCommand<SearchCommand>
 {
-    public string Command => "search";
-    public string Description => "Process a mod list to highlight common files";
+    public static Command Command = CommandBuilder
+        .CreateInvokable<SearchCommand>("search", "Process a mod list to highlight common files")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Arguments.Create<string>("mod-list", "Path to the mod list")
+        .AddSetter((c,v) => c.ModList = v ?? string.Empty).BuildArgument()
+        .Arguments.Create<string>("search-pattern", "File name pattern to look for")
+        .AddSetter((c,v) => c.SearchPattern = v ?? string.Empty).BuildArgument()
+        .BuildCommand();
     
     public string ModList { get; set; } = string.Empty;
     public string SearchPattern { get; set; } = string.Empty;
     
-    public IEnumerable<Argument> GetArguments()
+    public async Task<int> InvokeAsync(CancellationToken token)
     {
-        var opt = new TotArgument<string>("mod-list", "Path to the mod list");
-        opt.AddSetter(x => ModList = x ?? string.Empty );
-        yield return opt;
-        opt = new TotArgument<string>("search-pattern", "File name pattern to look for");
-        opt.AddSetter(x => SearchPattern = x ?? string.Empty);
-        yield return opt;
-    }
-    
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
-    {
-        var console = provider.GetRequiredService<IColoredConsole>();
-        var clerk = provider.GetRequiredService<KitchenClerk>();
-        
         try
         {
             List<string> modlist;

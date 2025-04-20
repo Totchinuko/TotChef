@@ -1,38 +1,32 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 
 namespace Tot.Commands;
 
-public class ConfigSetCommand : ITotCommand, ITotCommandArguments, ITotCommandInvoked
+public class ConfigSetCommand(IColoredConsole console, Config config) : IInvokableCommand<ConfigSetCommand>
 {
-    public string Command => "set";
-    public string Description => "set a config";
+    public static Command Command = CommandBuilder
+        .CreateInvokable<ConfigSetCommand>("set", "set a config")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Arguments.Create<string>("key", "Key of the config to interact with")
+        .AddSetter((c,v) => c.Key = v ?? string.Empty)
+        .BuildArgument()
+        .Arguments.Create<string>("value", "Value of the config to interact with")
+        .AddSetter((c,v) => c.Value = v ?? string.Empty)
+        .BuildArgument()
+        .BuildCommand();
     
     public string Key { get; set; } = string.Empty;
     public string Value { get; set; } = string.Empty;
     
-    public Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public Task<int> InvokeAsync(CancellationToken token)
     {
-        var console = provider.GetRequiredService<IColoredConsole>();
-        var config = provider.GetRequiredService<Config>();
-        
         if (string.IsNullOrEmpty(Key))
             return console.OutputCommandError(CommandCode.MissingArg("key"));
         config.SetValue(Key, Value);
         config.SaveConfig();
         return Task.FromResult(0);
-    }
-
-
-    public IEnumerable<Argument> GetArguments()
-    {
-        var arg = new TotArgument<string>("key", "Key of the config to interact with");
-        arg.AddSetter(x => Key = x ?? string.Empty);
-        yield return arg;
-        arg = new TotArgument<string>("value", "Value of the config to interact with");
-        arg.AddSetter(x => Value = x ?? string.Empty);
-        arg.SetDefaultValue("");
-        yield return arg;
     }
 }

@@ -1,19 +1,15 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using tot_lib;
+using tot_lib.CommandLine;
 
 namespace Tot.Commands;
 
-public class ConfigCommand : ITotCommand, ITotCommandSubCommands
+public class ConfigCommand : ICommand<ConfigCommand>
 {
-    public string Command => "config";
-    public string Description => "Configure the cli settings";
-
-    public IEnumerable<ITotCommand> GetSubCommands()
-    {
-        yield return new ConfigGetCommand();
-        yield return new ConfigSetCommand();
-        yield return new ConfigListCommand();
-    }
+    public static Command Command = CommandBuilder
+        .Create<ConfigCommand>("config", "Configure the cli settings")
+        .SubCommands.Add(ConfigListCommand.Command)
+        .SubCommands.Add(ConfigGetCommand.Command)
+        .SubCommands.Add(ConfigSetCommand.Command)
+        .BuildCommand();
 }

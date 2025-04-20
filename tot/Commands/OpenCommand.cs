@@ -2,31 +2,27 @@
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class OpenCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
+public class OpenCommand(IColoredConsole console, KitchenFiles files) : IInvokableCommand<OpenCommand>
 {
-    public string Command => "open";
-    public string Description => "Open the folder containing the pak files";
-
+    public static Command Command = CommandBuilder
+        .CreateInvokable<OpenCommand>("open", "Open the folder containing the pak files")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Options.AddModName((c,v) => c.ModName = v)
+        .BuildCommand();
+    
     public string ModName { get; set; } = string.Empty;
 
-    public IEnumerable<Option> GetOptions()
+    public async Task<int> InvokeAsync(CancellationToken token)
     {
-        yield return Utils.GetModNameOption(x => ModName = x);
-    }
-    
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
-    {
-        var console = provider.GetRequiredService<IColoredConsole>();
-        var kFiles = provider.GetRequiredService<KitchenFiles>();
-        
         try
         {
-            kFiles.SetModName(ModName);
-            Process.Start("explorer.exe", provider.GetRequiredService<KitchenFiles>().ModPakFolder.FullName);
+            files.SetModName(ModName);
+            Process.Start("explorer.exe", files.ModPakFolder.FullName);
             return 0;
         }
         catch (CommandException ex)

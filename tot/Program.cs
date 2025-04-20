@@ -13,30 +13,29 @@ internal class Program
     static async Task<int> Main(string[] args)
     {
         var rootCommand = new RootCommand("Conan Exile Modding Cli");
-        rootCommand.CreateTot<CheckoutCommand>(ConfigureServices);
-        rootCommand.CreateTot<CleanCommand>(ConfigureServices);
-        rootCommand.CreateTot<ConfigCommand>(ConfigureServices);
-        rootCommand.CreateTot<ConflictCommand>(ConfigureServices);
-        rootCommand.CreateTot<CookCommand>(ConfigureServices);
-        rootCommand.CreateTot<DescriptionCommand>(ConfigureServices);
-        rootCommand.CreateTot<DevKitCommand>(ConfigureServices);
-        rootCommand.CreateTot<GhostCommand>(ConfigureServices);
-        rootCommand.CreateTot<ListCommand>(ConfigureServices);
-        rootCommand.CreateTot<OpenCommand>(ConfigureServices);
-        rootCommand.CreateTot<PakCommand>(ConfigureServices);
-        rootCommand.CreateTot<PathCommand>(ConfigureServices);
-        rootCommand.CreateTot<SearchCommand>(ConfigureServices);
-        rootCommand.CreateTot<StatusCommand>(ConfigureServices);
-        rootCommand.CreateTot<SwapCommand>(ConfigureServices);
-        rootCommand.CreateTot<SwitchCommand>(ConfigureServices);
-        rootCommand.CreateTot<ValidateCommand>(ConfigureServices);
-        rootCommand.CreateTot<VersionCommand>(ConfigureServices);
-        rootCommand.CreateTot<NoteCommand>(ConfigureServices);
+        rootCommand.AddCommand(CheckoutCommand.Command);
+        rootCommand.AddCommand(CleanCommand.Command);
+        rootCommand.AddCommand(ConfigCommand.Command);
+        rootCommand.AddCommand(ConflictCommand.Command);
+        rootCommand.AddCommand(CookCommand.Command);
+        rootCommand.AddCommand(DescriptionCommand.Command);
+        rootCommand.AddCommand(DevKitCommand.Command);
+        rootCommand.AddCommand(ListCommand.Command);
+        rootCommand.AddCommand(OpenCommand.Command);
+        rootCommand.AddCommand(PakCommand.Command);
+        rootCommand.AddCommand(PathCommand.Command);
+        rootCommand.AddCommand(SearchCommand.Command);
+        rootCommand.AddCommand(StatusCommand.Command);
+        rootCommand.AddCommand(SwapCommand.Command);
+        rootCommand.AddCommand(SwitchCommand.Command);
+        rootCommand.AddCommand(ValidateCommand.Command);
+        rootCommand.AddCommand(VersionCommand.Command);
+        rootCommand.AddCommand(NoteCommand.Command);
         
         return await rootCommand.InvokeAsync(args);
     }
 
-    static void ConfigureServices(IServiceCollection services)
+    public static void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<IColoredConsole>(Console.IsOutputRedirected ? new ColorlessConsole() : new DotnetConsole());
         services.AddSingleton(Config.LoadConfig());

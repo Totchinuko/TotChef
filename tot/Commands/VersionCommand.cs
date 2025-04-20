@@ -2,40 +2,29 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public partial class VersionCommand : ITotCommandInvoked, ITotCommand, ITotCommandSubCommands, ITotCommandOptions
+public partial class VersionCommand(KitchenFiles files, IColoredConsole console) : IInvokableCommand<VersionCommand>
 {
-    public string VersionPart { get; protected set; } = string.Empty;
-    
-    public string Command => "version";
-    public string Description => "Handle mod version modification and display";
+    public static Command Command = CommandBuilder
+        .CreateInvokable<VersionCommand>("version", "Handle mod version modification and display")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Options.AddModName((c,v) => c.ModName = v)
+        .SubCommands.Add(VersionMajorCommand.Command)
+        .SubCommands.Add(VersionMinorCommand.Command)
+        .SubCommands.Add(VersionBuildCommand.Command)
+        .BuildCommand();
     
     public string ModName { get; set; } = string.Empty;
-
-    public IEnumerable<Option> GetOptions()
+   public async Task<int> InvokeAsync(CancellationToken cancellationToken)
     {
-        yield return Utils.GetModNameOption(x => ModName = x);
-    }
-    
-    public IEnumerable<ITotCommand> GetSubCommands()
-    {
-        yield return new VersionBuildCommand();
-        yield return new VersionMinorCommand();
-        yield return new VersionMajorCommand();
-    }
-    
-   public async Task<int> InvokeAsync(IServiceProvider services, CancellationToken cancellationToken)
-    {
-        var kFiles = services.GetRequiredService<KitchenFiles>();
-        var console = services.GetRequiredService<IColoredConsole>();
-
         try
         {
-            kFiles.SetModName(ModName);
-            var modInfos = await kFiles.GetModInfos();
+            files.SetModName(ModName);
+            var modInfos = await files.GetModInfos();
             console.Write($"{modInfos.VersionMajor}.{modInfos.VersionMinor}.{modInfos.VersionBuild}");
         }
         catch (CommandException ex)

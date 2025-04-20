@@ -1,19 +1,19 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 
 namespace Tot.Commands;
 
-public class ConfigListCommand : ITotCommand, ITotCommandInvoked
+public class ConfigListCommand(IColoredConsole console, Config config) : IInvokableCommand<ConfigListCommand>
 {
-    public string Command => "list";
-    public string Description => "list all the config available and their current values";
+    public static Command Command = CommandBuilder
+        .CreateInvokable<ConfigListCommand>("list", "list all the config available and their current values")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .BuildCommand();
     
-    public Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public Task<int> InvokeAsync(CancellationToken token)
     {
-        var console = provider.GetRequiredService<IColoredConsole>();
-        var config = provider.GetRequiredService<Config>();
-        
         console.WriteLine("Listing all configs");
         foreach (var prop in config.GetKeyList()) 
             console.WriteLine($"{prop}={config.GetValue(prop)}");

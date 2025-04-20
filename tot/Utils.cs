@@ -1,6 +1,8 @@
 ﻿using System.CommandLine;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using tot_lib;
+using tot_lib.CommandLine;
 
 namespace Tot;
 
@@ -15,14 +17,15 @@ public static class Utils
         return true;
     }
 
-    public static Option GetModNameOption(Action<string> setter)
+    public static ICommandBuilder<TCommand> AddModName<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]TCommand>(this IOptionCollection<TCommand> options, 
+        Action<TCommand, string> setter) 
+        where TCommand : class,ICommand<TCommand>
     {
-        var option = new TotOption<string>("--conan-mod",
-            "Specify the mod name you want to perform the action on");
-        option.AddAlias("-m");
-        option.SetDefaultValue(string.Empty);
-        option.AddSetter(x => setter(x ?? string.Empty));
-        return option;
+        return options
+            .Create<string>("--conan-mod", "Specify the mod name you want to perform the action on")
+            .AddAlias("-m")
+            .AddSetter((c, v) => setter(c,v ?? string.Empty))
+            .BuildOption();
     }
 
     public static async Task EditWithCli(this Config config, string filePath) =>

@@ -2,29 +2,25 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class ConflictCommand : ITotCommand, ITotCommandArguments, ITotCommandInvoked
+public class ConflictCommand(IColoredConsole console, KitchenClerk clerk) : IInvokableCommand<ConflictCommand>
 {
+    public static Command Command = CommandBuilder
+        .CreateInvokable<ConflictCommand>("conflict", "Process a mod list to highlight common files")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Arguments.Create<string>()
+        .AddSetter((c, v) => c.Path = v ?? string.Empty)
+        .BuildArgument()
+        .BuildCommand();
+    
     public string Path { get; set; } = string.Empty;
     
-    public string Command => "conflict";
-    public string Description => "Process a mod list to highlight common files";
-    
-    public IEnumerable<Argument> GetArguments()
+    public async Task<int> InvokeAsync(CancellationToken token)
     {
-        var arg = new TotArgument<string>("path", "Path to the mod list");
-        arg.AddSetter(x => Path = x ?? string.Empty);
-        yield return arg;
-    }
-    
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
-    {
-        var console = provider.GetRequiredService<IColoredConsole>();
-        var clerk = provider.GetRequiredService<KitchenClerk>();
-        
         if (string.IsNullOrEmpty(Path))
             return await console.OutputCommandError(CommandCode.MissingArg(nameof(Path)));
 

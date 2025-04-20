@@ -1,15 +1,14 @@
-﻿using tot_lib;
+﻿using System.CommandLine;
+using tot_lib;
+using tot_lib.CommandLine;
 
 namespace Tot.Commands;
 
-public class NoteCommand : ITotCommand, ITotCommandSubCommands
+public class NoteCommand : ICommand<NoteCommand>
 {
-    public string Command => "note";
-    public string Description => "Manage patch notes";
-    public IEnumerable<ITotCommand> GetSubCommands()
-    {
-        yield return new NoteAddCommand();
-        yield return new NoteDisplayCommand();
-        yield return new NoteClearCommand();
-    }
+    public static Command Command = CommandBuilder
+        .Create<NoteCommand>("note", "Manage patch notes")
+        .SubCommands.Add(NoteClearCommand.Command)
+        .SubCommands.Add(NoteDisplayCommand.Command)
+        .BuildCommand();
 }

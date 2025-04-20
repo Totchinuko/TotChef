@@ -1,36 +1,30 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class ValidateCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
+public class ValidateCommand(KitchenFiles files, IColoredConsole console, GitHandler git) : IInvokableCommand<ValidateCommand>
 {
-    public string Command => "validate";
-    public string Description => "Validate git repositories for the cooking process";
-
+    public static Command Command = CommandBuilder
+        .CreateInvokable<ValidateCommand>("validate", "Validate git repositories for the cooking process")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Options.AddModName((c,v) => c.ModName = v)
+        .BuildCommand();
     public string ModName { get; set; } = string.Empty;
 
-    public IEnumerable<Option> GetOptions()
+    public async Task<int> InvokeAsync(CancellationToken token)
     {
-        yield return Utils.GetModNameOption(x => ModName = x);
-    }
-    
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
-    {
-        var kFiles = provider.GetRequiredService<KitchenFiles>();
-        var console = provider.GetRequiredService<IColoredConsole>();
-        var git = provider.GetRequiredService<GitHandler>();
-        
         try
         {
-            kFiles.SetModName(ModName);
+            files.SetModName(ModName);
 
-            if (await git.IsGitRepoInvalidOrDirty(kFiles.ModSharedFolder))
+            if (await git.IsGitRepoInvalidOrDirty(files.ModSharedFolder))
                 throw new CommandException(CommandCode.RepositoryIsDirty, "ModsShared repo is dirty");
-            if (await git.IsGitRepoInvalidOrDirty(kFiles.ModFolder))
-                throw new CommandException(CommandCode.RepositoryIsDirty, $"Mod {kFiles.ModName} repo is dirty");
+            if (await git.IsGitRepoInvalidOrDirty(files.ModFolder))
+                throw new CommandException(CommandCode.RepositoryIsDirty, $"Mod {files.ModName} repo is dirty");
             return 0;
         }
         catch (CommandException ex)

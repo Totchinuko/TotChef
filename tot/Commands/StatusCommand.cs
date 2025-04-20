@@ -2,49 +2,40 @@
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class StatusCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
+public class StatusCommand(IColoredConsole console, KitchenClerk clerk, KitchenFiles files) : IInvokableCommand<StatusCommand>
 {
-    public string Command => "status";
-    public string Description => "List the content of the cookinfo.ini with file status";
+    public static Command Command = CommandBuilder
+        .CreateInvokable<StatusCommand>("status", "List the content of the cookinfo.ini with file status")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Options.Create<bool>("--raw", "Display the raw list of the cookinfo.ini").AddAlias("-r")
+        .AddSetter((c,v) => c.Raw = v).BuildOption()
+        .Options.Create<string>("--search-pattern", "Get details on a specific folder").AddAlias("-s")
+        .AddSetter((c,v) => c.SearchPattern = v ?? string.Empty).BuildOption()
+        .Options.AddModName((c,v) => c.ModName = v)
+        .BuildCommand();
     
     public bool Raw { get; set; }
     public string SearchPattern { get; set; } = string.Empty;
     public string ModName { get; set; } = string.Empty;
 
-    public IEnumerable<Option> GetOptions()
+    public async Task<int> InvokeAsync(CancellationToken token)
     {
-        yield return Utils.GetModNameOption(x => ModName = x);
-        var opt = new TotOption<bool>("--raw", "Display the raw list of the cookinfo.ini");
-        opt.AddAlias("-r");
-        opt.AddSetter(x => Raw = x);
-        yield return opt;
-        var opt2 = new TotOption<string>("--search-pattern", "Get details on a specific folder");
-        opt2.AddSetter(x => SearchPattern = x ?? string.Empty);
-        opt2.AddAlias("-s");
-        yield return opt2;
-    }
-
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
-    {
-        var console = provider.GetRequiredService<IColoredConsole>();
-        var clerk = provider.GetRequiredService<KitchenClerk>();
-        var kFiles = provider.GetRequiredService<KitchenFiles>();
-        
         try
         {
-            kFiles.SetModName(ModName);
+            files.SetModName(ModName);
 
             if (Raw)
             {
-                await ExecuteRawList(clerk, console);
+                await ExecuteRawList();
                 return 0;
             }
 
-            await ExecuteFriendly(kFiles, clerk, console);
+            await ExecuteFriendly();
             return 0;
         }
         catch (CommandException ex)
@@ -53,13 +44,13 @@ public class StatusCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
         }
     }
 
-    private async Task ExecuteFriendly(KitchenFiles kFiles, KitchenClerk clerk, IColoredConsole console)
+    private async Task ExecuteFriendly()
     {
         var filter = SearchPattern;
         if (!string.IsNullOrEmpty(SearchPattern))
         {
-            if (!filter.PosixFullName().StartsWith(kFiles.DevKitContent.PosixFullName()))
-                filter = Path.Join(kFiles.DevKitContent.FullName, filter);
+            if (!filter.PosixFullName().StartsWith(files.DevKitContent.PosixFullName()))
+                filter = Path.Join(files.DevKitContent.FullName, filter);
             if (Directory.Exists(filter))
                 filter = new DirectoryInfo(filter).GetProperCasedDirectoryInfo().PosixFullName();
             else
@@ -113,11 +104,11 @@ public class StatusCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
                 else notFounDir.Add(info.Directory.FullName, new List<string> { file });
         }
 
-        var files = Directory.GetFiles(kFiles.ModFolder.FullName, $"*{Constants.UAssetExt}",
+        var fileList = Directory.GetFiles(files.ModFolder.FullName, $"*{Constants.UAssetExt}",
             SearchOption.AllDirectories).ToList();
-        files.AddRange(Directory.GetFiles(kFiles.ModsShared.FullName, $"*{Constants.UAssetExt}",
+        fileList.AddRange(Directory.GetFiles(files.ModsShared.FullName, $"*{Constants.UAssetExt}",
             SearchOption.AllDirectories));
-        foreach (var file in files)
+        foreach (var file in fileList)
         {
             if (!string.IsNullOrEmpty(filter) && !file.PosixFullName().StartsWith(filter))
                 continue;
@@ -137,15 +128,15 @@ public class StatusCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
         directories.Sort();
         foreach (var dir in directories)
         {
-            var file = dir.Substring(kFiles.DevKitContent.FullName.Length);
-            if (dir.StartsWith(kFiles.ModsShared.FullName))
+            var file = dir.Substring(files.DevKitContent.FullName.Length);
+            if (dir.StartsWith(files.ModsShared.FullName))
                 console.Write("Shared:" + file.PosixFullName() + " [");
-            else if (dir.StartsWith(kFiles.ModLocalFolder.FullName))
-                console.Write("Local:" + file.PosixFullName() + " ");
-            else if (dir.StartsWith(kFiles.ModContentFolder.FullName))
-                console.Write("Override:" + file.PosixFullName() + " ");
+            else if (dir.StartsWith(files.ModLocalFolder.FullName))
+                console.Write("Local:" + file.PosixFullName() + " [");
+            else if (dir.StartsWith(files.ModContentFolder.FullName))
+                console.Write("Override:" + file.PosixFullName() + " [");
             else
-                console.Write("Other:" + file.PosixFullName() + " ");
+                console.Write("Other:" + file.PosixFullName() + " [");
 
             if (includedDir.TryGetValue(dir, out var value))
                 console.Write(ConsoleColor.Green, $"+{value.Count}");
@@ -171,7 +162,7 @@ public class StatusCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
         }
     }
     
-    private async Task ExecuteRawList(KitchenClerk clerk, IColoredConsole console)
+    private async Task ExecuteRawList()
     {
         var cookInfo = await clerk.GetCookInfo();
         foreach (var file in cookInfo.Included)

@@ -1,34 +1,30 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class SwitchCommand : ITotCommandInvoked, ITotCommandOptions, ITotCommand
+public class SwitchCommand(KitchenFiles files, IColoredConsole console) : IInvokableCommand<SwitchCommand>
 {
-    public string Command => "switch";
-    public string Description => "Switch the active.txt to the selected mod";
-
+    public static Command Command = CommandBuilder
+        .CreateInvokable<SwitchCommand>("switch", "Switch the active.txt to the selected mod")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Options.AddModName((c,v) => c.ModName = v)
+        .BuildCommand();
+    
     public string ModName { get; set; } = string.Empty;
 
-    public IEnumerable<Option> GetOptions()
+    public async Task<int> InvokeAsync(CancellationToken token)
     {
-        yield return Utils.GetModNameOption(x => ModName = x);
-    }
-    
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
-    {
-        var kFiles = provider.GetRequiredService<KitchenFiles>();
-        var console = provider.GetRequiredService<IColoredConsole>();
-        
         try
         {
-            kFiles.SetModName(ModName);
+            files.SetModName(ModName);
 
-            kFiles.DeleteAnyActive();
-            kFiles.CreateActive();
-            console.WriteLine($"{kFiles.ModName} is now active");
+            files.DeleteAnyActive();
+            files.CreateActive();
+            console.WriteLine($"{files.ModName} is now active");
         }
         catch (CommandException ex)
         {

@@ -1,64 +1,51 @@
 ﻿using System.CommandLine;
+using System.Data;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
+public class CookCommand(GitHandler git, KitchenFiles files, IColoredConsole console, Stove stove, KitchenClerk clerk) : IInvokableCommand<CookCommand>
 {
+    public static Command Command = CommandBuilder
+        .CreateInvokable<CookCommand>("cook", "Start a cook process for the mod")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Options.Create<bool>("--force", "Force the cook process even if the repo is dirty").AddAlias("-f")
+        .AddSetter((c, v) => c.Force = v).BuildOption()
+        .Options.Create<bool>("--verbose", "Display the Dev Kit cook output").AddAlias("-v")
+        .AddSetter((c, v) => c.Verbose = v).BuildOption()
+        .Options.Create<bool>("--no-version-bump", "Prevent the auto bump of the build version").AddAlias("-nv")
+        .AddSetter((c, v) => c.NoVersionBump = v).BuildOption()
+        .Options.AddModName((c, v) => c.ModName = v)
+        .BuildCommand();
+    
     public bool Force { get; set; }
     public bool Verbose { get; set; }
     public bool NoVersionBump { get; set; }
-    
-    public string Command => "cook";
-    public string Description => "Start a cook process for the mod";
-    
     public string ModName { get; set; } = string.Empty;
 
-    public IEnumerable<Option> GetOptions()
+    public async Task<int> InvokeAsync(CancellationToken cancellationToken)
     {
-        yield return Utils.GetModNameOption(x => ModName = x);
-        var opt = new TotOption<bool>("--force", "Force the cook process even if the repo is dirty");
-        opt.AddAlias("-f");
-        opt.AddSetter(x => Force = x);
-        yield return opt;
-        opt = new TotOption<bool>("--verbose", "Display the Dev Kit cook output");
-        opt.AddAlias("-v");
-        opt.AddSetter(x => Verbose = x);
-        yield return opt;
-        opt = new TotOption<bool>("--no-version-bump", "Prevent the auto bump of the build version");
-        opt.AddAlias("-nv");
-        opt.AddSetter(x => NoVersionBump = x);
-        yield return opt;
-    }
-
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken cancellationToken)
-    {
-        var git = provider.GetRequiredService<GitHandler>();
-        var kFiles = provider.GetRequiredService<KitchenFiles>();
-        var console = provider.GetRequiredService<IColoredConsole>();
-        var stove = provider.GetRequiredService<Stove>();
-        var clerk = provider.GetRequiredService<KitchenClerk>();
-
         try
         {
-            kFiles.SetModName(ModName);
-            if (await git.IsGitRepoInvalidOrDirty(kFiles.ModsShared) && !Force)
+            files.SetModName(ModName);
+            if (await git.IsGitRepoInvalidOrDirty(files.ModsShared) && !Force)
                 throw new CommandException(CommandCode.RepositoryIsDirty, "Cooking:ModsShared repo is dirty");
-            if (await git.IsGitRepoInvalidOrDirty(kFiles.ModFolder) && !Force)
+            if (await git.IsGitRepoInvalidOrDirty(files.ModFolder) && !Force)
                 throw new CommandException(CommandCode.RepositoryIsDirty,
-                    $"Cooking:Mod {kFiles.ModName} repo is dirty");
+                    $"Cooking:Mod {files.ModName} repo is dirty");
             if (!await git.IsModsSharedBranchValid())
                 throw new CommandException(CommandCode.RepositoryWrongBranch,
                     "Cooking:Dedicated ModsShared branch is not checked out");
             
-            kFiles.DeleteAnyActive();
-            kFiles.CreateActive();
-            console.WriteLine($"Cooking:{kFiles.ModName} is now active");
+            files.DeleteAnyActive();
+            files.CreateActive();
+            console.WriteLine($"Cooking:{files.ModName} is now active");
 
             var cookInfos = await clerk.GetCookInfo();
-            var change = clerk.UpdateIncludedCookInfo(kFiles.ModLocalFolder, cookInfos);
+            var change = clerk.UpdateIncludedCookInfo(files.ModLocalFolder, cookInfos);
 
             if (change.Count > 0)
             {
@@ -79,7 +66,7 @@ public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
             console.WriteLine("Cooking:Cleaning cook folders from previous operations...");
             clerk.CleanCookedFolder();
             clerk.CleanCookingFolder();
-            console.WriteLine($"Cooking:Cooking {kFiles.ModName}...");
+            console.WriteLine($"Cooking:Cooking {files.ModName}...");
 
             await stove.StartCooking(cancellationToken, Verbose);
             if (!stove.WasSuccess)
@@ -92,7 +79,7 @@ public class CookCommand : ITotCommandInvoked, ITotCommand, ITotCommandOptions
             return await console.OutputCommandError(ex);
         }
 
-        console.WriteLine($"{kFiles.ModName} cooked successfully.. !");
+        console.WriteLine($"{files.ModName} cooked successfully.. !");
         return 0;
     }
 }

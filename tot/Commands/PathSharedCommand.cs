@@ -1,22 +1,23 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class PathSharedCommand : ITotCommand, ITotCommandInvoked
+public class PathSharedCommand(KitchenFiles files, IColoredConsole console) : IInvokableCommand<PathSharedCommand>
 {
-    public string Command => "shared";
-    public string Description => "Print out the path of a mod shared directory";
-
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public static Command Command = CommandBuilder
+        .CreateInvokable<PathSharedCommand>("shared", "Print out the path of a mod shared directory")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .BuildCommand();
+    
+    public async Task<int> InvokeAsync(CancellationToken token)
     {
-        var kFiles = provider.GetRequiredService<KitchenFiles>();
-        var console = provider.GetRequiredService<IColoredConsole>();
         try
         {
-            console.Write(kFiles.ModsShared.PosixFullName());
+            console.Write(files.ModsShared.PosixFullName());
             return 0;
         }
         catch (CommandException ex)

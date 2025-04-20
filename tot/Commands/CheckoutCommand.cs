@@ -3,28 +3,23 @@ using System.CommandLine.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class CheckoutCommand : ITotCommand, ITotCommandInvoked, ITotCommandOptions
+public class CheckoutCommand(GitHandler git, IColoredConsole console, KitchenFiles kFiles) : IInvokableCommand<CheckoutCommand>
 {
-    public string Command => "checkout";
-    public string Description => "Checkout the dedicated mod branch (sharing the same name) in the ModsShared folder";
+    public static Command Command = CommandBuilder.CreateInvokable<CheckoutCommand>(
+            "checkout", "Checkout the dedicated mod branch (sharing the same name) in the ModsShared folder")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Options.AddModName((c, v) => c.ModName = v)
+        .BuildCommand();
 
     public string ModName { get; set; } = string.Empty;
     
-    public IEnumerable<Option> GetOptions()
+    public async Task<int> InvokeAsync(CancellationToken cancellationToken)
     {
-        yield return Utils.GetModNameOption(x => ModName = x); 
-    }
-
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken cancellationToken)
-    {
-        var git = provider.GetRequiredService<GitHandler>();
-        var console = provider.GetRequiredService<IColoredConsole>();
-        var kFiles = provider.GetRequiredService<KitchenFiles>();
-
         try
         {
             kFiles.SetModName(ModName);

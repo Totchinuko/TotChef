@@ -1,31 +1,26 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using tot_lib;
+using tot_lib.CommandLine;
 
 namespace Tot.Commands;
 
-public class ConfigGetCommand : ITotCommand, ITotCommandArguments, ITotCommandInvoked
+public class ConfigGetCommand(IColoredConsole console, Config config) : IInvokableCommand<ConfigGetCommand>
 {
-    public string Command => "get";
-    public string Description => "get the value of a config";
+    public static Command Command = CommandBuilder
+        .CreateInvokable<ConfigGetCommand>("get", "get the value of a config")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Arguments.Create<string>("key", "Key of the config to interact with")
+        .AddSetter((c, v) => c.Key = v ?? string.Empty).BuildArgument()
+        .BuildCommand();
     
     public string Key { get; set; } = string.Empty;
     
-    public Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
+    public Task<int> InvokeAsync(CancellationToken token)
     {
-        var console = provider.GetRequiredService<IColoredConsole>();
-        var config = provider.GetRequiredService<Config>();
-        
         if (string.IsNullOrEmpty(Key))
             return console.OutputCommandError(CommandCode.MissingArg("key"));
         console.WriteLine(config.GetValue(Key));
         return Task.FromResult(0);
-    }
-
-    public IEnumerable<Argument> GetArguments()
-    {
-        var arg = new TotArgument<string>("key", "Key of the config to interact with");
-        arg.AddSetter(x => Key = x ?? string.Empty);
-        yield return arg;
     }
 }

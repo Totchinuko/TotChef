@@ -2,37 +2,32 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using tot_lib;
+using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class CleanCommand : ITotCommand, ITotCommandInvoked, ITotCommandOptions
+public class CleanCommand(KitchenClerk clerk, KitchenFiles files, IColoredConsole console) : IInvokableCommand<CleanCommand>
 {
-    public string Command => "clean";
-    public string Description => "Clean any missing file from the cookinfo.ini";
+    public static Command Command = CommandBuilder
+        .CreateInvokable<CleanCommand>("clean", "Clean any missing file from the cookinfo.ini")
+        .SetServiceConfiguration(Program.ConfigureServices)
+        .Options.AddModName((c, v) => c.ModName = v)
+        .BuildCommand();
     
     public string ModName { get; set; } = string.Empty;
 
-    public IEnumerable<Option> GetOptions()
+    public async Task<int> InvokeAsync(CancellationToken token)
     {
-        yield return Utils.GetModNameOption(x => ModName = x);
-    }
-    
-    public async Task<int> InvokeAsync(IServiceProvider provider, CancellationToken token)
-    {
-        var clerk = provider.GetRequiredService<KitchenClerk>();
-        var kFiles = provider.GetRequiredService<KitchenFiles>();
-        var console = provider.GetRequiredService<IColoredConsole>();
-
         try
         {
-            kFiles.SetModName(ModName);
+            files.SetModName(ModName);
             var cookInfos = await clerk.GetCookInfo();
             var changes = clerk.RemoveMissingFiles(cookInfos);
             await clerk.SetCookInfo(cookInfos);
             foreach (var file in changes)
                 Console.WriteLine(file);
-            Console.WriteLine($"{changes.Count} missing file(s) removed from {kFiles.ModName} cookinfo.ini");
+            Console.WriteLine($"{changes.Count} missing file(s) removed from {files.ModName} cookinfo.ini");
         }
         catch (CommandException ex)
         {
@@ -41,6 +36,4 @@ public class CleanCommand : ITotCommand, ITotCommandInvoked, ITotCommandOptions
 
         return 0;
     }
-
-
 }
