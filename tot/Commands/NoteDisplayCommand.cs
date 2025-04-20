@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Pastel;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
@@ -31,7 +32,7 @@ public class NoteDisplayCommand(Config config, PatchHandler handler, IConsole co
             
             var note = await handler.GetCurrentPatchNote();
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("## What's Changed");
+            builder.AppendLine("## What's Changed".Pastel(Constants.ColorBlue));
             builder.AppendLine(string.Empty);
             
             foreach (var line in note.Additions)

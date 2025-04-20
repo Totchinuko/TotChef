@@ -8,7 +8,7 @@ using tot.Services;
 
 namespace Tot.Commands;
 
-public class DevKitCommand(GitHandler git, IConsole console, ILogger<DevKitCommand> logger, KitchenFiles files) : IInvokableCommand<DevKitCommand>
+public class DevKitCommand(GitHandler git, ILogger<DevKitCommand> logger, KitchenFiles files) : IInvokableCommand<DevKitCommand>
 {
     public static Command Command = CommandBuilder
         .CreateInvokable<DevKitCommand>("devkit", "Open the devkit for the targeted mod")
@@ -25,10 +25,10 @@ public class DevKitCommand(GitHandler git, IConsole console, ILogger<DevKitComma
             files.SetModName(ModName);
 
             var branch = await git.CheckoutModsSharedBranch();
-            console.WriteLine($"{branch} branch is now active on Shared repository");
+            logger.LogInformation("{branch} branch is now active on Shared repository", branch);
             files.DeleteAnyActive();
             files.CreateActive();
-            console.WriteLine($"Set {files.ModName} as active");
+            logger.LogInformation("Set {mod} as active", files.ModName);
 
             Process.Start(files.Ue4Editor.FullName,
                 string.Join(" ", files.UProject.FullName, string.Join(" ", Constants.EditorArgs)));

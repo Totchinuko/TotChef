@@ -1,5 +1,6 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.Logging;
+using Pastel;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
@@ -130,38 +131,38 @@ public class StatusCommand(ILogger<StatusCommand> logger, IConsole console, Kitc
         {
             var file = dir.Substring(files.DevKitContent.FullName.Length);
             if (dir.StartsWith(files.ModsShared.FullName))
-                console.Write("Shared:" + file.PosixFullName() + " [");
+                console.Write($"Shared   ".Pastel(Constants.ColorPurple) + $"{file.PosixFullName()} [".Pastel(Constants.ColorGrey));
             else if (dir.StartsWith(files.ModLocalFolder.FullName))
-                console.Write("Local:" + file.PosixFullName() + " [");
+                console.Write($"Local    ".Pastel(Constants.ColorAccent) + $"{file.PosixFullName()} [".Pastel(Constants.ColorGrey));
             else if (dir.StartsWith(files.ModContentFolder.FullName))
-                console.Write("Override:" + file.PosixFullName() + " [");
+                console.Write($"Override ".Pastel(Constants.ColorOrange) + $"{file.PosixFullName()} [".Pastel(Constants.ColorGrey));
             else
-                console.Write("Other:" + file.PosixFullName() + " [");
+                console.Write($"Other    ".Pastel(Constants.ColorYellow) + $"{file.PosixFullName()} [".Pastel(Constants.ColorGrey));
 
             if (includedDir.TryGetValue(dir, out var value))
-                console.Write($"+{value.Count}");
+                console.Write($"+{value.Count}".Pastel(Constants.ColorGreen));
             if (excludedDir.TryGetValue(dir, out var value1))
-                console.Write($"-{value1.Count}");
+                console.Write($"-{value1.Count}".Pastel(Constants.ColorRed));
             if (absentDir.TryGetValue(dir, out var value2))
-                console.Write($"!{value2.Count}");
+                console.Write($"!{value2.Count}".Pastel(Constants.ColorYellow));
             if (notFounDir.TryGetValue(dir, out var value3))
-                console.Write($"?{value3.Count}");
-            console.Write("]\n");
+                console.Write($"?{value3.Count}".Pastel(Constants.ColorPurple));
+            console.Write("]\n".Pastel(Constants.ColorGrey));
 
             if (!string.IsNullOrEmpty(filter))
             {
                 if (includedDir.TryGetValue(dir, out var value4))
                     foreach (var v in value4)
-                        console.WriteLine($"+{v}");
+                        console.WriteLine($"+{v}".Pastel(Constants.ColorGreen));
                 if (excludedDir.TryGetValue(dir, out var value5))
                     foreach (var v in value5)
-                        console.WriteLine($"-{v}");
+                        console.WriteLine($"-{v}".Pastel(Constants.ColorRed));
                 if (absentDir.TryGetValue(dir, out var value6))
                     foreach (var v in value6)
-                        console.WriteLine($"!{v}");
+                        console.WriteLine($"!{v}".Pastel(Constants.ColorYellow));
                 if (notFounDir.TryGetValue(dir, out var value7))
                     foreach (var v in value7)
-                        console.WriteLine($"?{v}");
+                        console.WriteLine($"?{v}".Pastel(Constants.ColorPurple));
             }
         }
     }

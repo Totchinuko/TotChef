@@ -1,7 +1,9 @@
 ﻿using System.CommandLine;
+using System.Reflection.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Pastel;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
@@ -72,9 +74,10 @@ public class ConflictCommand(IConsole console, ILogger<ConflictCommand> logger, 
 
             if (keyValuePair.Value.Count > 1 && !keyValuePair.Value.AreShaIdentical())
             {
-                console.WriteLine(keyValuePair.Value[0].path);
+                console.WriteLine(keyValuePair.Value[0].path.Pastel(Constants.ColorOrange));
                 foreach (var pakedFile in keyValuePair.Value)
-                    console.WriteLine($"{pakedFile.sha} - {pakedFile.pakName} ({pakedFile.size} bytes)");
+                    console.WriteLine($"{pakedFile.sha} - {pakedFile.pakName}" + 
+                                      $"({pakedFile.size} bytes)".Pastel(Constants.ColorGrey));
             }
         }
 

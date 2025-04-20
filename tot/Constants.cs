@@ -58,4 +58,13 @@ public static class Constants
 
     public const string PatchNoteFile = ".patch";
 
+    public const string ColorRed = "#e93519";
+    public const string ColorGreen = "#68c355";
+    public const string ColorYellow = "#f1d22e";
+    public const string ColorBlue = "#1b96ec";
+    public const string ColorPurple = "#8f65c8";
+    public const string ColorOrange = "#ff9800";
+    public const string ColorGrey = "#babbb9";
+    public const string ColorAccent = "#A5E5FA";
+
 }
