@@ -7,7 +7,10 @@
         <StartupObject>Tot.Program</StartupObject>
         <ApplicationIcon>icon.ico</ApplicationIcon>
         <Authors>Totchinuko</Authors>
-        <Version>$([System.IO.File]::ReadAllText("$(MSBuildProjectDirectory)\\..\\VERSION"))</Version>
+        <Version>
+            $([System.IO.File]::ReadAllText("$(MSBuildProjectDirectory)\\..\\VERSION"))
+            .$([MSBuild]::Divide($([MSBuild]::Modulo($([System.DateTimeOffset]::UtcNow.ToUnixTimeSeconds()), 86400)), 2))
+        </Version>
         <PublishSingleFile>true</PublishSingleFile>
         <SelfContained>true</SelfContained>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
