@@ -51,8 +51,9 @@ public class CookCommand(ILogger<CookCommand> logger,GitHandler git, KitchenFile
                 else
                     await clerk.SetCookInfoAndCommit(cookInfos);
                 logger.LogWarning("Added {changes} missing local mod files to cooking", change.Count);
-                foreach (var c in change)
-                    logger.LogWarning("Change:{change}",c);
+                using(logger.BeginScope(("DevKitSource", "CookInfoChanges")))
+                    foreach (var c in change)
+                        logger.LogWarning(c);
             }
 
             if (!NoVersionBump)

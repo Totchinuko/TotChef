@@ -73,8 +73,12 @@ internal static class Program
             .MinimumLevel.Information()
 #endif
             .WriteTo.Console(new ExpressionTemplate(
-                "[{@t:HH:mm:ss} {@l:u3}] {@m}\n{@x}",
-                theme: TemplateTheme.Code
+                "[{@t:HH:mm:ss} {@l:u3}" +
+                "{#if DevKitSource is not null} " +
+                    "{DevKitSource,-25}" +
+                "{#end}" +
+                "] {@m}\n{@x}",
+                theme: TemplateTheme.Code   
                 ))
             .CreateLogger();
     }

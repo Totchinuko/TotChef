@@ -72,7 +72,8 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ILo
 
             if (!validFiles.Contains(localFile))
             {
-                logger.LogWarning("Ignoring:{file}", file);
+                using(logger.BeginScope(("DevKitSource", "Ignoring")))
+                    logger.LogWarning(file);
                 continue;
             }
 
@@ -82,12 +83,14 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ILo
             FileInfo to = new(Path.Join(files.ModCookedFolder.FullName, localFile) + Path.GetExtension(file));
             if (to.Directory == null)
             {
-                logger.LogWarning("Ignoring:{file}", file);
+                using(logger.BeginScope(("DevKitSource", "Ignoring")))
+                    logger.LogWarning(file);
                 continue;
             }
 
             if (verbose)
-                logger.LogInformation("Copy:{file}", from.FullName);
+                using(logger.BeginScope(("DevKitSource", "Copy")))
+                    logger.LogInformation(from.FullName);
 
             Directory.CreateDirectory(to.Directory.FullName);
             if (to.Exists)
@@ -100,7 +103,8 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git, ILo
         if (checkedFiles.Count != validFiles.Count)
         {
             foreach (var file in validFiles.Except(checkedFiles))
-                logger.LogError("Error:{file}",file);
+                using(logger.BeginScope(("DevKitSource", "Failed")))
+                    logger.LogError(file);
             throw new Exception("CookInfos contain invalid files");
         }
     }
