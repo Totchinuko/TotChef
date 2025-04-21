@@ -24,7 +24,7 @@ public static class Utils
         return options
             .Create<string>("--conan-mod", "Specify the mod name you want to perform the action on")
             .AddAlias("-m")
-            .AddSetter((c, v) => setter(c,v ?? string.Empty))
+            .SetSetter((c, v) => setter(c,v ?? string.Empty))
             .BuildOption();
     }
 

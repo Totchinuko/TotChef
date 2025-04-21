@@ -12,9 +12,9 @@ public class SearchCommand(ILogger<SearchCommand> logger, KitchenClerk clerk) : 
         .CreateInvokable<SearchCommand>("search", "Process a mod list to highlight common files")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Arguments.Create<string>("mod-list", "Path to the mod list")
-        .AddSetter((c,v) => c.ModList = v ?? string.Empty).BuildArgument()
+        .SetSetter((c,v) => c.ModList = v ?? string.Empty).BuildArgument()
         .Arguments.Create<string>("search-pattern", "File name pattern to look for")
-        .AddSetter((c,v) => c.SearchPattern = v ?? string.Empty).BuildArgument()
+        .SetSetter((c,v) => c.SearchPattern = v ?? string.Empty).BuildArgument()
         .BuildCommand();
     
     public string ModList { get; set; } = string.Empty;

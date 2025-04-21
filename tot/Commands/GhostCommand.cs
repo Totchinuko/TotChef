@@ -13,7 +13,7 @@ public class GhostCommand(ILogger<GhostCommand> logger, KitchenFiles files) : II
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.AddModName((c,v) => c.ModName = v)
         .Options.Create<bool>("--cleanup").AddAlias("-c")
-        .AddSetter((c,v) => c.Cleanup = v).BuildOption()
+        .SetSetter((c,v) => c.Cleanup = v).BuildOption()
         .BuildCommand();
     
     public bool Cleanup { get; set; }

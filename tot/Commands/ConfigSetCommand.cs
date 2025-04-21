@@ -10,10 +10,10 @@ public class ConfigSetCommand(ILogger<ConfigSetCommand> logger, Config config) :
         .CreateInvokable<ConfigSetCommand>("set", "set a config")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Arguments.Create<string>("key", "Key of the config to interact with")
-        .AddSetter((c,v) => c.Key = v ?? string.Empty)
+        .SetSetter((c,v) => c.Key = v ?? string.Empty)
         .BuildArgument()
         .Arguments.Create<string>("value", "Value of the config to interact with")
-        .AddSetter((c,v) => c.Value = v ?? string.Empty)
+        .SetSetter((c,v) => c.Value = v ?? string.Empty)
         .BuildArgument()
         .BuildCommand();
     

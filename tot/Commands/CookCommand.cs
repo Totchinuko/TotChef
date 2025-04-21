@@ -12,11 +12,11 @@ public class CookCommand(ILogger<CookCommand> logger,GitHandler git, KitchenFile
         .CreateInvokable<CookCommand>("cook", "Start a cook process for the mod")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.Create<bool>("--force", "Force the cook process even if the repo is dirty").AddAlias("-f")
-        .AddSetter((c, v) => c.Force = v).BuildOption()
+        .SetSetter((c, v) => c.Force = v).BuildOption()
         .Options.Create<bool>("--verbose", "Display the Dev Kit cook output").AddAlias("-v")
-        .AddSetter((c, v) => c.Verbose = v).BuildOption()
+        .SetSetter((c, v) => c.Verbose = v).BuildOption()
         .Options.Create<bool>("--no-version-bump", "Prevent the auto bump of the build version").AddAlias("-nv")
-        .AddSetter((c, v) => c.NoVersionBump = v).BuildOption()
+        .SetSetter((c, v) => c.NoVersionBump = v).BuildOption()
         .Options.AddModName((c, v) => c.ModName = v)
         .BuildCommand();
     

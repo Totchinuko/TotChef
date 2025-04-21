@@ -10,7 +10,7 @@ public class ConfigGetCommand(IConsole console, ILogger<ConfigGetCommand> logger
         .CreateInvokable<ConfigGetCommand>("get", "get the value of a config")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Arguments.Create<string>("key", "Key of the config to interact with")
-        .AddSetter((c, v) => c.Key = v ?? string.Empty).BuildArgument()
+        .SetSetter((c, v) => c.Key = v ?? string.Empty).BuildArgument()
         .BuildCommand();
     
     public string Key { get; set; } = string.Empty;

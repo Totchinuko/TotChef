@@ -13,7 +13,7 @@ public class PakCommand(KitchenFiles files, ILogger<PakCommand> logger) : IInvok
         .CreateInvokable<PakCommand>("pak", "Pak the previously cooked files")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.Create<bool>("--compress", "Compress the files to reduce the final mod size").AddAlias("-c")
-        .AddSetter((c,v) => c.Compress = v).BuildOption()
+        .SetSetter((c,v) => c.Compress = v).BuildOption()
         .Options.AddModName((c,v) => c.ModName = v)
         .BuildCommand();
     

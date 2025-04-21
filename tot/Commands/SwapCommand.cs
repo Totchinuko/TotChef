@@ -12,11 +12,11 @@ public class SwapCommand(KitchenFiles files, KitchenClerk clerk, ILogger<SwapCom
         .CreateInvokable<SwapCommand>("swap", "Swap files in the cookinfo.ini")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.Create<bool>("--exclude", "Swap files to the exclude list").AddAlias("-e")
-        .AddSetter((c,v) => c.Exclude = v).BuildOption()
+        .SetSetter((c,v) => c.Exclude = v).BuildOption()
         .Options.Create<bool>("--recursive", "Include files from subfolder").AddAlias("-r")
-        .AddSetter((c,v) => c.Recursive = v).BuildOption()
+        .SetSetter((c,v) => c.Recursive = v).BuildOption()
         .Options.Create<string>("--search-pattern", "Folder filtering, accept * wildcards on file name").AddAlias("-s")
-        .AddSetter((c,v) => c.SearchPattern = v ?? string.Empty).BuildOption()
+        .SetSetter((c,v) => c.SearchPattern = v ?? string.Empty).BuildOption()
         .Options.AddModName((c,v) => c.ModName = v)
         .BuildCommand();
     

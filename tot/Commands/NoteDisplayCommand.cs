@@ -15,7 +15,7 @@ public class NoteDisplayCommand(Config config, PatchHandler handler, IConsole co
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.Create<bool>("--in-editor", "Display in an editor like vim or nano instead of console output")
         .AddAlias("-e")
-        .AddSetter((c,v) => c.DisplayInEditor = v).BuildOption()
+        .SetSetter((c,v) => c.DisplayInEditor = v).BuildOption()
         .BuildCommand();
 
     public bool DisplayInEditor { get; set; }

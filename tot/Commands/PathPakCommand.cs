@@ -11,7 +11,7 @@ public class PathPakCommand(KitchenFiles files, IConsole console, ILogger<PathPa
     public static readonly Command Command = CommandBuilder
         .CreateInvokable<PathPakCommand>("pak", "Print out the path of a mod pak file")
         .SetServiceConfiguration(Program.ConfigureServices)
-        .Arguments.Create<string>("mod-name").AddSetter((c, v) => c.ModName = v ?? string.Empty).BuildArgument()
+        .Arguments.Create<string>("mod-name").SetSetter((c, v) => c.ModName = v ?? string.Empty).BuildArgument()
         .BuildCommand();
     public string ModName { get; set; } = string.Empty;
     public Task<int> InvokeAsync(CancellationToken token)

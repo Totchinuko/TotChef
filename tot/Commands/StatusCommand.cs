@@ -13,9 +13,9 @@ public class StatusCommand(ILogger<StatusCommand> logger, IConsole console, Kitc
         .CreateInvokable<StatusCommand>("status", "List the content of the cookinfo.ini with file status")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.Create<bool>("--raw", "Display the raw list of the cookinfo.ini").AddAlias("-r")
-        .AddSetter((c,v) => c.Raw = v).BuildOption()
+        .SetSetter((c,v) => c.Raw = v).BuildOption()
         .Options.Create<string>("--search-pattern", "Get details on a specific folder").AddAlias("-s")
-        .AddSetter((c,v) => c.SearchPattern = v ?? string.Empty).BuildOption()
+        .SetSetter((c,v) => c.SearchPattern = v ?? string.Empty).BuildOption()
         .Options.AddModName((c,v) => c.ModName = v)
         .BuildCommand();
     

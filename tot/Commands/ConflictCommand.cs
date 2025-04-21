@@ -16,7 +16,7 @@ public class ConflictCommand(IConsole console, ILogger<ConflictCommand> logger, 
         .CreateInvokable<ConflictCommand>("conflict", "Process a mod list to highlight common files")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Arguments.Create<string>("path")
-        .AddSetter((c, v) => c.Path = v ?? string.Empty)
+        .SetSetter((c, v) => c.Path = v ?? string.Empty)
         .BuildArgument()
         .BuildCommand();
     
