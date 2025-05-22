@@ -75,6 +75,7 @@ public partial class Stove
             var matches = LogRegex().Match(line);
             if (!matches.Success)
             {
+                if(!_verbose) continue;
                 _logger.LogInformation(line);
                 continue;
             }
@@ -83,6 +84,8 @@ public partial class Stove
             var source = matches.Groups[3].Value.Trim();
             var level = ParseLogLevel(matches.Groups[4].Value);
             var content = matches.Groups[5].Value;
+
+            if (level < LogLevel.Error && !_verbose) continue;
             
             using(_logger.BeginScope(("DevKitSource", source)))
                 _logger.Log(level, content);
