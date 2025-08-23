@@ -56,7 +56,7 @@ public class GitHandler : ITotService
             throw new Exception("Invalid ModsShared repository branches");
 
         var worktree = await GetCurrentWorktree();
-        if (worktree.Branch == branch.Name)
+        if (worktree.Name == branch.Name)
             return branch.FriendlyName;
 
         if (await IsGitRepoInvalidOrDirty(_files.ModsShared))
