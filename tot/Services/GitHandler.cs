@@ -73,8 +73,8 @@ public class GitHandler : ITotService
             return false;
 
         var repo = await GetCurrentWorktree();
-        return repo.Name == _files.ModName ||
-               (!await HasDedicatedModsSharedBranch() && repo.Name == "master");
+        return repo.Name.StartsWith(_files.ModName) ||
+               (!await HasDedicatedModsSharedBranch() && repo.Name.StartsWith("master"));
     }
 
     public async Task<tot_lib.Git.Models.Worktree> GetCurrentWorktree()
