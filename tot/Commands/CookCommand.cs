@@ -34,8 +34,10 @@ public class CookCommand(ILogger<CookCommand> logger,GitHandler git, KitchenFile
                 throw new Exception("ModsShared repo is dirty");
             if (await git.IsGitRepoInvalidOrDirty(files.ModFolder) && !Force)
                 throw new Exception($"Mod {files.ModName} repo is dirty");
-            if (!await git.IsModsSharedBranchValid())
+            if (!await git.IsModsSharedBranchValid() && !Force)
                 throw new Exception("Dedicated ModsShared branch is not checked out");
+            if(Force)
+                logger.LogWarning(@"/!\ Cooking is running in force mode!!!");
             
             files.DeleteAnyActive();
             files.CreateActive();
