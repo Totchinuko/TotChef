@@ -14,9 +14,13 @@ public class DevKitCommand(GitHandler git, ILogger<DevKitCommand> logger, Kitche
         .CreateInvokable<DevKitCommand>("devkit", "Open the devkit for the targeted mod")
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.AddModName((c, v) => c.ModName = v)
+        .Options.Create<bool>("--force-branch", "Use the current branch without trying to interfer").AddAlias("-f")
+        .SetSetter((c, v) => c.ForceBranch = v).BuildOption()
         .BuildCommand();
     
     public string ModName { get; set; } = string.Empty;
+
+    public bool ForceBranch { get; set; } = false;
 
     public async Task<int> InvokeAsync(CancellationToken token)
     {
@@ -24,8 +28,11 @@ public class DevKitCommand(GitHandler git, ILogger<DevKitCommand> logger, Kitche
         {
             files.SetModName(ModName);
 
-            var branch = await git.CheckoutModsSharedBranch();
-            logger.LogInformation("{branch} branch is now active on Shared repository", branch);
+            if (!ForceBranch)
+            {
+                var branch = await git.CheckoutModsSharedBranch();
+                logger.LogInformation("{branch} branch is now active on Shared repository", branch);
+            }
             files.DeleteAnyActive();
             files.CreateActive();
             logger.LogInformation("Set {mod} as active", files.ModName);
