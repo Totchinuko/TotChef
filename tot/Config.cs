@@ -14,6 +14,8 @@ public class Config : ITotService
 {
     public string DevKitPath { get; set; } = "";
 
+    public string AlternateOutputFolder { get; set; } = "";
+
     public string GitBinary { get; set; } = "git";
 
     public bool AutoBumpBuild { get; set; }
@@ -77,6 +79,9 @@ public class Config : ITotService
             case nameof(GitBinary):
                 GitBinary = value;
                 break;
+            case nameof(AlternateOutputFolder):
+                AlternateOutputFolder = value;
+                break;
             default:
                 throw new Exception($"Invalid key: {key}");
         }
@@ -89,7 +94,8 @@ public class Config : ITotService
             nameof(DevKitPath),
             nameof(AutoBumpBuild),
             nameof(DefaultCliEditor),
-            nameof(GitBinary)
+            nameof(GitBinary),
+            nameof(AlternateOutputFolder)
         ];
     }
 
@@ -101,6 +107,7 @@ public class Config : ITotService
             nameof(AutoBumpBuild) => AutoBumpBuild.ToString(),
             nameof(DefaultCliEditor) => DefaultCliEditor,
             nameof(GitBinary) => GitBinary,
+            nameof(AlternateOutputFolder) => AlternateOutputFolder,
             _ => throw new Exception($"Invalid key: {key}")
         };
     }

@@ -16,10 +16,6 @@ public class KitchenFiles(Config config) : ITotService
             Constants.LocalDirDkConanSandbox, Constants.LocalDirDkSaved))
         .GetProperCasedDirectoryInfo();
 
-    public DirectoryInfo CookingFolder =>
-        new DirectoryInfo(Path.Join(EditorSavedFolder.FullName, Constants.LocalDirDkCooking))
-            .GetProperCasedDirectoryInfo();
-
     public FileInfo CookLogFile =>
         new FileInfo(Path.Join(LogFiles.FullName, ModName + Constants.TxtExt)).GetProperCasedFileInfo();
 
@@ -28,8 +24,6 @@ public class KitchenFiles(Config config) : ITotService
     public DirectoryInfo DevKitContent => new DirectoryInfo(Path.Join(DevKit.FullName, Constants.LocalDirDkConanSandbox,
             Constants.LocalDirDkContent))
         .GetProperCasedDirectoryInfo();
-
-    public DirectoryInfo GraniteSdkDir => new(Path.Join(DevKit.FullName, Constants.LocalDirDkGraniteSdk));
 
     public DirectoryInfo LogFiles =>
         new DirectoryInfo(Path.Join(TempFolder.FullName, Constants.LocalDirTmpLogs)).GetProperCasedDirectoryInfo();
@@ -88,6 +82,10 @@ public class KitchenFiles(Config config) : ITotService
         new FileInfo(Path.Join(DevKit.FullName, Constants.LocalDirDkBin, Constants.EditorBinary))
             .GetProperCasedFileInfo();
 
+    public FileInfo UnrealRunAutomation =>
+        new FileInfo(Path.Join(DevKit.FullName, Constants.LocalDirDkBatch, Constants.RunUat))
+            .GetProperCasedFileInfo();
+
     public FileInfo DevKitVersion => new FileInfo(Path.Join(DevKit.FullName, Constants.VersionFile))
         .GetProperCasedFileInfo();
 
@@ -98,6 +96,10 @@ public class KitchenFiles(Config config) : ITotService
         new FileInfo(Path.Join(DevKit.FullName, Constants.LocalDirDkConanSandbox, Constants.UProject))
             .GetProperCasedFileInfo();
 
+    public DirectoryInfo ScriptDir =>
+        new DirectoryInfo(Path.Join(DevKit.FullName, Constants.LocalDirDkConanSandbox))
+            .GetProperCasedDirectoryInfo();
+
     public void SetModName(string name)
     {
         if (IsDevkitPathValid())
@@ -105,7 +107,7 @@ public class KitchenFiles(Config config) : ITotService
         else
             throw new Exception("Devkit directory could not be found, make sure the configuration is correct");
         if (!IsModPathValid())
-            throw new Exception($"Mod not found {_modName}");
+            throw new Exception($"Mod not found \"{_modName}\" in " + ModsFolder.FullName);
     }
 
     public async Task<string[]> GetCookInfos()

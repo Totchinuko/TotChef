@@ -13,6 +13,8 @@ public class CookCommand(ILogger<CookCommand> logger,GitHandler git, KitchenFile
         .SetServiceConfiguration(Program.ConfigureServices)
         .Options.Create<bool>("--force", "Force the cook process even if the repo is dirty").AddAlias("-f")
         .SetSetter((c, v) => c.Force = v).BuildOption()
+        .Options.Create<bool>("-altoutput", "Output the cooked mod to the alternate output directory").AddAlias("-ao")
+        .SetSetter((c, v) => c.ToAlternateOutputDir = v).BuildOption()
         .Options.Create<bool>("--verbose", "Display the Dev Kit cook output").AddAlias("-v")
         .SetSetter((c, v) => c.Verbose = v).BuildOption()
         .Options.Create<bool>("--no-version-bump", "Prevent the auto bump of the build version").AddAlias("-nv")
@@ -24,6 +26,7 @@ public class CookCommand(ILogger<CookCommand> logger,GitHandler git, KitchenFile
     public bool Verbose { get; set; }
     public bool NoVersionBump { get; set; }
     public string ModName { get; set; } = string.Empty;
+    public bool ToAlternateOutputDir { get; set; } = false;
 
     public async Task<int> InvokeAsync(CancellationToken cancellationToken)
     {
@@ -61,18 +64,13 @@ public class CookCommand(ILogger<CookCommand> logger,GitHandler git, KitchenFile
             if (!NoVersionBump)
             {
                 await clerk.AutoBumpBuild();
-                await clerk.UpdateModDevKitVersion();
+                //await clerk.UpdateModDevKitVersion(); ?Not needed anymore?
             }
-            logger.LogInformation("Cleaning cook folders from previous operations...");
-            clerk.CleanCookedFolder();
-            clerk.CleanCookingFolder();
             logger.LogInformation("Cooking {mod}...", files.ModName);
 
-            await stove.StartCooking(cancellationToken, Verbose);
+            await stove.StartCooking(cancellationToken, Verbose, ToAlternateOutputDir);
             if (!stove.WasSuccess)
                 throw new Exception($"Cooking failed. {stove.Errors} Error(s)");
-
-            await clerk.CopyAndFilter(Verbose);
         }
         catch (Exception ex)
         {

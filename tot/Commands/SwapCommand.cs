@@ -1,12 +1,13 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.Logging;
+using Pastel;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
 namespace Tot.Commands;
 
-public class SwapCommand(KitchenFiles files, KitchenClerk clerk, ILogger<SwapCommand> logger) : IInvokableCommand<SwapCommand>
+public class SwapCommand(KitchenFiles files, KitchenClerk clerk, ILogger<SwapCommand> logger, IConsole console) : IInvokableCommand<SwapCommand>
 {
     public static readonly Command Command = CommandBuilder
         .CreateInvokable<SwapCommand>("swap", "Swap files in the cookinfo.ini")
@@ -34,7 +35,10 @@ public class SwapCommand(KitchenFiles files, KitchenClerk clerk, ILogger<SwapCom
             var filter = SearchPattern;
             if (!string.IsNullOrEmpty(filter) &&
                 !filter.PosixFullName().StartsWith(files.DevKitContent.PosixFullName()))
+            {
                 filter = Path.Join(files.DevKitContent.FullName, filter);
+                logger.LogInformation("Filter modifier: "+filter.PosixFullName());
+            }
 
             var cookInfo = await clerk.GetCookInfo();
             List<string> added;
@@ -78,8 +82,8 @@ public class SwapCommand(KitchenFiles files, KitchenClerk clerk, ILogger<SwapCom
 
             await clerk.SetCookInfo(cookInfo);
 
-            foreach (var addedFile in added)
-                logger.LogInformation(Exclude ? "-" : "+" + addedFile);
+            foreach (var swappedFile  in added)
+                console.WriteLine(((Exclude ? "- " : "+ ") + swappedFile ).Pastel(Exclude ? Constants.ColorRed : Constants.ColorGreen));
         }
         catch (Exception ex)
         {

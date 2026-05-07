@@ -27,6 +27,7 @@
         <Copyright>Copyright © $([System.DateTime]::Now.Year) Totchinuko https://github.com/Totchinuko</Copyright>
         <PackageLicenseExpression>GPL-2.0</PackageLicenseExpression>
         <Product>chef</Product>
+        <AssemblyName>tote</AssemblyName>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
         <DebugType>none</DebugType>

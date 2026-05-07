@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using System.CommandLine.IO;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using tot_lib;
@@ -11,44 +12,56 @@ namespace Tot;
 public partial class Stove
 {
     private readonly ILogger<Stove> _logger;
-    private readonly Process _process;
+    private readonly Config _config;
     private bool _verbose;
+    private KitchenFiles _files;
 
-    public Stove(KitchenFiles kitchenFiles, ILogger<Stove> logger)
+    public Stove(KitchenFiles kitchenFiles, ILogger<Stove> logger, Config config)
     {
         _logger = logger;
-        _process = new Process();
-        _process.StartInfo.UseShellExecute = false;
-        _process.StartInfo.RedirectStandardOutput = true;
-        _process.StartInfo.FileName = kitchenFiles.Ue4Cmd.FullName;
-        _process.StartInfo.WorkingDirectory = kitchenFiles.DevKit.FullName;
-        _process.StartInfo.EnvironmentVariables["=C:"] = "C:\\";
-        _process.StartInfo.EnvironmentVariables[Constants.GraniteSdkEnvKey] = kitchenFiles.GraniteSdkDir.FullName;
-        _process.StartInfo.Arguments = string.Join(" ",
-            "\"" + kitchenFiles.UProject.FullName + "\"",
-            string.Join(" ", Constants.CookArgs),
-            Constants.CookLogArg + "=" + kitchenFiles.CookLogFile.FullName
-        );
-        _process.OutputDataReceived += OnOutputDataReceived;
+        _config = config;
+        _files = kitchenFiles;
     }
 
     public bool WasSuccess { get; private set; }
     public int Errors { get; private set; }
     public int Warnings { get; private set; }
 
-    public async Task StartCooking(CancellationToken cancellationToken, bool verbose = false)
+    public async Task StartCooking(CancellationToken cancellationToken, bool verbose = false, bool altOutput = false)
     {
         _verbose = verbose;
-        _process.Start();
-        _process.BeginOutputReadLine();
-        await _process.WaitForExitAsync(cancellationToken);
-        if (!_process.HasExited)
+        
+        var process = new Process();
+        process.StartInfo.UseShellExecute = false;
+        process.StartInfo.RedirectStandardOutput = true;
+        process.StartInfo.FileName = _files.UnrealRunAutomation.FullName;
+        process.StartInfo.WorkingDirectory = _files.DevKit.FullName;
+        process.StartInfo.Arguments = string.Join(" ",
+            string.Join(" ", Constants.CookArgsFirstPass),
+            Constants.CookProjectArg + "=\"" + _files.UProject.FullName + "\"",
+            Constants.CookScriptDirArg + "=\"" + _files.ScriptDir.FullName + "\"",
+            Constants.CookModArg + "=\"" + _files.ModName + "\"",
+            string.Join(" ", Constants.CookArgsSecondPass)
+        );
+        if (altOutput)
         {
-            _process.Kill();
+            if (string.IsNullOrEmpty(_config.AlternateOutputFolder) || !Directory.Exists(_config.AlternateOutputFolder))
+                throw new DirectoryNotFoundException("Alternate Output Direction \"" + _config.AlternateOutputFolder +
+                                                     "\" does not exists");
+            process.StartInfo.Arguments +=
+                " " + Constants.CookOutputDirArg + "=\"" + _config.AlternateOutputFolder + "\"";
+        }
+        process.OutputDataReceived += OnOutputDataReceived;
+        process.Start();
+        process.BeginOutputReadLine();
+        await process.WaitForExitAsync(cancellationToken);
+        if (!process.HasExited)
+        {
+            process.Kill();
             WasSuccess = false;
             return;
         }
-        WasSuccess = _process.ExitCode == 0;
+        WasSuccess = process.ExitCode == 0;
     }
 
     private void OnOutputDataReceived(object sender, DataReceivedEventArgs e)

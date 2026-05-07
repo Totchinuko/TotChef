@@ -24,7 +24,7 @@ public class PathModCommand(KitchenFiles files, IConsole console, ILogger<PathMo
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Failed to find mod");
+            logger.LogCritical(ex, "Failed to find mod "+ ModName +" at "+files.ModFolder.PosixFullName());
             return Task.FromResult(ex.GetErrorCode());
         }
     }

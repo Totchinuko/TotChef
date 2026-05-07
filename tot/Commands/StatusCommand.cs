@@ -51,11 +51,15 @@ public class StatusCommand(ILogger<StatusCommand> logger, IConsole console, Kitc
         if (!string.IsNullOrEmpty(SearchPattern))
         {
             if (!filter.PosixFullName().StartsWith(files.DevKitContent.PosixFullName()))
+            {
                 filter = Path.Join(files.DevKitContent.FullName, filter);
+                logger.LogInformation("Filter modifier: "+filter.PosixFullName());
+            }
             if (Directory.Exists(filter))
-                filter = new DirectoryInfo(filter).GetProperCasedDirectoryInfo().PosixFullName();
+                filter = new DirectoryInfo(filter).GetProperCasedDirectoryInfo().PosixFullName()
+                    .RemoveBaseDir(files.DevKitContent);
             else
-                filter = null;
+                throw new DirectoryNotFoundException("Filter direction not found at " + SearchPattern);
         }
 
         var cookInfo = await clerk.GetCookInfo();
@@ -70,7 +74,7 @@ public class StatusCommand(ILogger<StatusCommand> logger, IConsole console, Kitc
             if (!string.IsNullOrEmpty(filter) && !file.StartsWith(filter))
                 continue;
 
-            var info = new FileInfo(file);
+            var info = new FileInfo(Path.Join(files.DevKitContent.FullName, file));
             if (info.Directory == null) continue;
 
             if (!directories.Contains(info.Directory.FullName))
@@ -90,7 +94,7 @@ public class StatusCommand(ILogger<StatusCommand> logger, IConsole console, Kitc
             if (!string.IsNullOrEmpty(filter) && !file.StartsWith(filter))
                 continue;
 
-            var info = new FileInfo(file);
+            var info = new FileInfo(Path.Join(files.DevKitContent.FullName, file));
             if (info.Directory == null) continue;
 
             if (!directories.Contains(info.Directory.FullName))
@@ -111,14 +115,15 @@ public class StatusCommand(ILogger<StatusCommand> logger, IConsole console, Kitc
             SearchOption.AllDirectories));
         foreach (var file in fileList)
         {
-            if (!string.IsNullOrEmpty(filter) && !file.PosixFullName().StartsWith(filter))
+            if (!string.IsNullOrEmpty(filter) && !file.PosixFullName().RemoveBaseDir(files.DevKitContent)
+                    .StartsWith(filter))
                 continue;
 
             var info = new FileInfo(file);
             if (info.Directory == null) continue;
 
-            if (cookInfo.Included.Contains(info.PosixFullName()) ||
-                cookInfo.Excluded.Contains(info.PosixFullName())) continue;
+            if (cookInfo.Included.Contains(info.PosixFullName().RemoveBaseDir(files.DevKitContent)) ||
+                cookInfo.Excluded.Contains(info.PosixFullName().RemoveBaseDir(files.DevKitContent))) continue;
             if (!directories.Contains(info.Directory.FullName))
                 directories.Add(info.Directory.FullName);
             if (absentDir.ContainsKey(info.Directory.FullName))
