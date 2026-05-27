@@ -57,7 +57,9 @@ public class KitchenFiles(Config config) : ITotService
             .GetProperCasedFileInfo();
 
     public DirectoryInfo ModPakFolder =>
-        new DirectoryInfo(Path.Join(PakFiles.FullName, ModName)).GetProperCasedDirectoryInfo();
+        new DirectoryInfo(Path.Join(DevKit.FullName, Constants.LocalDirDkConanSandbox, Constants.LocalDirDkSaved,
+            Constants.LocalDirDkMods,
+            ModName, Constants.LocalDirDkOutput)).GetProperCasedDirectoryInfo();
 
     public DirectoryInfo ModsFolder =>
         new DirectoryInfo(Path.Join(DevKitContent.FullName, Constants.LocalDirDkMods)).GetProperCasedDirectoryInfo();

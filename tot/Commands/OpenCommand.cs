@@ -22,6 +22,8 @@ public class OpenCommand(ILogger<OpenCommand> logger, KitchenFiles files) : IInv
         try
         {
             files.SetModName(ModName);
+            if (!files.ModPakFolder.Exists)
+                throw new DirectoryNotFoundException("Mod Pak Output does not exists: " + files.ModPakFolder.FullName);
             Process.Start("explorer.exe", files.ModPakFolder.FullName);
             return Task.FromResult(0);
         }

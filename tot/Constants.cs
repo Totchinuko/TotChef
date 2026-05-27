@@ -32,6 +32,7 @@ public static class Constants
     public const string LocalDirDkContent = "Content";
     public const string LocalDirDkSaved = "Saved";
     public const string LocalDirDkMods = "Mods";
+    public const string LocalDirDkOutput = "Output";
     public const string LocalDirDkModsShared = "ModsShared";
     public const string LocalDirDkBin = "Engine/Binaries/Win64";
     public const string LocalDirDkBatch = "Engine/Build/BatchFiles";

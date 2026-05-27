@@ -35,6 +35,9 @@ public class ModinfoData
     [JsonPropertyName("steamTestLivePublishedFileId")]
     public string SteamTestLivePublishedFileId { get; set; } = string.Empty;
 
+    [JsonPropertyName("steamWorkshopFileIds")] 
+    public ModInfoSteamIdData SteamWorkshopFileIds { get; set; } = new();
+
     [JsonPropertyName("steamVisibility")] public int SteamVisibility { get; set; } = 0;
 
     [JsonPropertyName("folderName")] public string FolderName { get; set; } = string.Empty;
@@ -44,4 +47,6 @@ public class ModinfoData
     [JsonPropertyName("snapshotId")] public int SnapshotId { get; set; } = 0;
 
     [JsonPropertyName("fileSize")] public int FileSize { get; set; } = -2;
+    
+    [JsonPropertyName("minimumVersion")] public string MinimumVersion { get; set; } = string.Empty;
 }
