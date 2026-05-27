@@ -69,12 +69,13 @@ public partial class Stove
         var line = e.Data?.Trim().Replace("\n", "").Replace("\r", "") ?? "";
         if (string.IsNullOrEmpty(line)) return;
 
+        // "^([0-9\\.\\-\\:\\[\\]\\s]+)LogInit:Display: (Failure|Success) - ([0-9,]+) error\\(s\\), ([0-9,]+) warning\\(s\\)$"
         var match = Regex.Match(line,
-            "^([0-9\\.\\-\\:\\[\\]\\s]+)LogInit:Display: (Failure|Success) - ([0-9,]+) error\\(s\\), ([0-9,]+) warning\\(s\\)$");
+            "^LogInit:Display: (Failure|Success) - ([0-9,]+) error\\(s\\), ([0-9,]+) warning\\(s\\)$");
         if (match.Success)
         {
-            Errors = int.Parse(match.Groups[3].Value);
-            Warnings = int.Parse(match.Groups[4].Value);
+            Errors = int.Parse(match.Groups[2].Value);
+            Warnings = int.Parse(match.Groups[3].Value);
         }
 
         ParseAndSend(line);
@@ -93,10 +94,9 @@ public partial class Stove
                 continue;
             }
             
-            //var date = ParseDate(matches.Groups[1].Value);
-            var source = matches.Groups[3].Value.Trim();
-            var level = ParseLogLevel(matches.Groups[4].Value);
-            var content = matches.Groups[5].Value;
+            var source = matches.Groups[1].Value.Trim();
+            var level = ParseLogLevel(matches.Groups[2].Value);
+            var content = matches.Groups[3].Value;
 
             if (level < LogLevel.Error && !_verbose) continue;
             
@@ -126,6 +126,6 @@ public partial class Stove
     }
     
     //regexr /^\[([0-9\.\-\:]+)\]\[([0-9\s]+)\]([\w\s]+):(?:([\w\s]+):)?(.+)/
-    [GeneratedRegex("^\\[([0-9\\.\\-\\:]+)\\]\\[([0-9\\s]+)\\]([\\w\\s]+):(?:([\\w\\s]+):)?(.+)")]
+    [GeneratedRegex("^([\\w\\s]+):(?:([\\w\\s]+):)?(.+)")]
     private static partial Regex LogRegex();
 }
