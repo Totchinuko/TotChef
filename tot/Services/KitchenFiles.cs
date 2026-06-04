@@ -45,6 +45,12 @@ public class KitchenFiles(Config config) : ITotService
     
     public FileInfo ModStatus =>
         new FileInfo(Path.Join(ModFolder.FullName, Constants.ModStatusFile)).GetProperCasedFileInfo();
+    
+    public FileInfo ModTags =>
+        new FileInfo(Path.Join(ModFolder.FullName, Constants.ModTagsFile)).GetProperCasedFileInfo();
+    
+    public FileInfo ModPreviewImage =>
+        new FileInfo(Path.Join(ModFolder.FullName, Constants.ModPreviewImage)).GetProperCasedFileInfo();
 
     public DirectoryInfo ModLocalFolder =>
         new DirectoryInfo(Path.Join(ModFolder.FullName, Constants.LocalDirModLocal)).GetProperCasedDirectoryInfo();
@@ -104,6 +110,10 @@ public class KitchenFiles(Config config) : ITotService
     public DirectoryInfo ScriptDir =>
         new DirectoryInfo(Path.Join(DevKit.FullName, Constants.LocalDirDkConanSandbox))
             .GetProperCasedDirectoryInfo();
+
+    public FileInfo SteamAppIdPath =>
+        new FileInfo(Path.Join(AppDomain.CurrentDomain.BaseDirectory, Constants.SteamAppIdTxt))
+            .GetProperCasedFileInfo();
 
     public void SetModName(string name)
     {
@@ -237,5 +247,17 @@ public class KitchenFiles(Config config) : ITotService
     {
         var json = JsonSerializer.Serialize(data, ModStatusJsonContext.Default.ModStatus);
         await File.WriteAllTextAsync(ModStatus.FullName, json);
+    }
+    
+    public async Task<ModTags> GetModTags()
+    {
+        var json = await File.ReadAllTextAsync(ModTags.FullName);
+        return JsonSerializer.Deserialize(json, ModTagsJsonContext.Default.ModTags) ?? new ModTags();
+    }
+    
+    public async Task SetModTags(ModTags data)
+    {
+        var json = JsonSerializer.Serialize(data, ModTagsJsonContext.Default.ModTags);
+        await File.WriteAllTextAsync(ModTags.FullName, json);
     }
 }

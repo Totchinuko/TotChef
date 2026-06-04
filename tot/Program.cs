@@ -38,6 +38,9 @@ internal static class Program
         rootCommand.AddCommand(ValidateCommand.Command);
         rootCommand.AddCommand(VersionCommand.Command);
         rootCommand.AddCommand(NoteCommand.Command);
+        rootCommand.AddCommand(UploadCommand.Command);
+        rootCommand.AddCommand(VisibilityCommand.Command);
+        rootCommand.AddCommand(TagsCommand.Command);
 
         var parser = new CommandLineBuilder(rootCommand)
             .UseDefaults()
@@ -64,6 +67,7 @@ internal static class Program
         services.AddSingleton<GitHandler>();
         services.AddSingleton<Stove>();
         services.AddSingleton<PatchHandler>();
+        services.AddSingleton<SteamWorks>();
     }
 
     public static Logger GetLogger()

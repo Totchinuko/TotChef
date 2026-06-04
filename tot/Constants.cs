@@ -2,6 +2,8 @@
 
 public static class Constants
 {
+    public const uint AppID = 440900u;
+    
     public const string CmdBinary = "UnrealEditor-Cmd.exe";
     public const string EditorBinary = "UnrealEditor.exe";
     public const string PakBinary = "UnrealPak.exe";
@@ -18,10 +20,13 @@ public static class Constants
     public const string ActiveFile = "active.txt";
     public const string ModInfosFile = "modinfo.json";
     public const string ModStatusFile = "modstatus.json";
+    public const string ModTagsFile = "modTags.json";
     public const string CookInfosFile = "CookInfo.ini";
     public const string VersionFile = "version.txt";
     public const string UProject = "ConanSandbox.uproject";
     public const string RunUat = "RunUAT.bat";
+    public const string SteamAppIdTxt = "steam_appid.txt";
+    public const string ModPreviewImage = "preview.png";
 
     public const string PakExt = ".pak";
     public const string TxtExt = ".txt";
@@ -54,9 +59,17 @@ public static class Constants
         "-Cook", "-Pak", "-FinalPak", "-Compress"
     ];
 
+    public static readonly string[] SteamTags =
+    [
+        "Enhanced", "Armors", "Weapons", "NPCs", "Features", "Map", "Total Conversion", "Buildings", "Admin",
+        "Roleplaying", "Cosmetic", "Balance", "Interface"
+    ];
+
     public static readonly string[] EditorArgs = ["-ModDevKit"];
     
     public const string GitCommitVersionMessage = "Bump version to {0}.{1}.{2}";
+    public const string GitCommitVisibilityMessage = "Change mod visibility";
+    public const string GitCommitTagsMessage = "Updated tag list";
     public const string GitCommitDevKitVersionMessage = "Bump Devkit version to {0}.{1}";
     public const string GitCommitCookinfoMessage = "Update cooking infos";
     public const string GitCommitDescriptionMessage = "Update mod description";

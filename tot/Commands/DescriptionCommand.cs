@@ -34,7 +34,7 @@ public class DescriptionCommand(KitchenFiles files, Config config, ILogger<Descr
             modInfos.Description = description;
             logger.LogInformation("Commiting changes");
             await files.SetModInfos(modInfos);
-            await git.CommitFile(files.ModFolder, files.ModCookInfo, Constants.GitCommitDescriptionMessage);
+            await git.CommitFile(files.ModFolder, files.ModInfo, Constants.GitCommitDescriptionMessage);
         }
         catch (Exception ex)
         {
