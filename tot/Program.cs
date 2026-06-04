@@ -28,7 +28,7 @@ internal static class Program
         rootCommand.AddCommand(DevKitCommand.Command);
         rootCommand.AddCommand(ListCommand.Command);
         rootCommand.AddCommand(OpenCommand.Command);
-        //rootCommand.AddCommand(PakCommand.Command);
+        rootCommand.AddCommand(ModStatusCommand.Command);
         rootCommand.AddCommand(GhostCommand.Command);
         rootCommand.AddCommand(PathCommand.Command);
         rootCommand.AddCommand(SearchCommand.Command);

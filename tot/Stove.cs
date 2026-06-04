@@ -9,52 +9,51 @@ using tot.Services;
 
 namespace Tot;
 
-public partial class Stove
+public partial class Stove(KitchenFiles kitchenFiles, ILogger<Stove> logger, Config config)
 {
-    private readonly ILogger<Stove> _logger;
-    private readonly Config _config;
     private bool _verbose;
-    private KitchenFiles _files;
-
-    public Stove(KitchenFiles kitchenFiles, ILogger<Stove> logger, Config config)
-    {
-        _logger = logger;
-        _config = config;
-        _files = kitchenFiles;
-    }
 
     public bool WasSuccess { get; private set; }
     public int Errors { get; private set; }
     public int Warnings { get; private set; }
+    public ModStatus CurrentStatus { get; private set; } = new();
 
     public async Task StartCooking(CancellationToken cancellationToken, bool verbose = false, bool altOutput = false)
     {
         _verbose = verbose;
-        
+
+        if(File.Exists(kitchenFiles.ModStatus.FullName))
+            CurrentStatus = await kitchenFiles.GetModStatus();
+        CurrentStatus.WasSuccess = false;
+        CurrentStatus.LastActionDate = DateTime.UtcNow;
+        CurrentStatus.ErrorLogs.Clear();
+        await kitchenFiles.SetModStatus(CurrentStatus);
+            
         var process = new Process();
         process.StartInfo.UseShellExecute = false;
         process.StartInfo.RedirectStandardOutput = true;
-        process.StartInfo.FileName = _files.UnrealRunAutomation.FullName;
-        process.StartInfo.WorkingDirectory = _files.DevKit.FullName;
+        process.StartInfo.FileName = kitchenFiles.UnrealRunAutomation.FullName;
+        process.StartInfo.WorkingDirectory = kitchenFiles.DevKit.FullName;
         process.StartInfo.Arguments = string.Join(" ",
             string.Join(" ", Constants.CookArgsFirstPass),
-            Constants.CookProjectArg + "=\"" + _files.UProject.FullName + "\"",
-            Constants.CookScriptDirArg + "=\"" + _files.ScriptDir.FullName + "\"",
-            Constants.CookModArg + "=\"" + _files.ModName + "\"",
+            Constants.CookProjectArg + "=\"" + kitchenFiles.UProject.FullName + "\"",
+            Constants.CookScriptDirArg + "=\"" + kitchenFiles.ScriptDir.FullName + "\"",
+            Constants.CookModArg + "=\"" + kitchenFiles.ModName + "\"",
             string.Join(" ", Constants.CookArgsSecondPass)
         );
         if (altOutput)
         {
-            if (string.IsNullOrEmpty(_config.AlternateOutputFolder) || !Directory.Exists(_config.AlternateOutputFolder))
-                throw new DirectoryNotFoundException("Alternate Output Direction \"" + _config.AlternateOutputFolder +
+            if (string.IsNullOrEmpty(config.AlternateOutputFolder) || !Directory.Exists(config.AlternateOutputFolder))
+                throw new DirectoryNotFoundException("Alternate Output Direction \"" + config.AlternateOutputFolder +
                                                      "\" does not exists");
             process.StartInfo.Arguments +=
-                " " + Constants.CookOutputDirArg + "=\"" + _config.AlternateOutputFolder + "\"";
+                " " + Constants.CookOutputDirArg + "=\"" + config.AlternateOutputFolder + "\"";
         }
         process.OutputDataReceived += OnOutputDataReceived;
         process.Start();
         process.BeginOutputReadLine();
         await process.WaitForExitAsync(cancellationToken);
+        await kitchenFiles.SetModStatus(CurrentStatus);
         if (!process.HasExited)
         {
             process.Kill();
@@ -62,6 +61,8 @@ public partial class Stove
             return;
         }
         WasSuccess = process.ExitCode == 0;
+        CurrentStatus.WasSuccess = WasSuccess;
+        await kitchenFiles.SetModStatus(CurrentStatus);
     }
 
     private void OnOutputDataReceived(object sender, DataReceivedEventArgs e)
@@ -90,7 +91,7 @@ public partial class Stove
             if (!matches.Success)
             {
                 if(!_verbose) continue;
-                _logger.LogInformation(line);
+                logger.LogInformation(line);
                 continue;
             }
             
@@ -98,10 +99,12 @@ public partial class Stove
             var level = ParseLogLevel(matches.Groups[2].Value);
             var content = matches.Groups[3].Value;
 
+            if (level >= LogLevel.Error)
+                CurrentStatus.ErrorLogs.Add($"[{source}][{level.ToString()}] {content}");
             if (level < LogLevel.Error && !_verbose) continue;
             
-            using(_logger.BeginScope(("DevKitSource", source)))
-                _logger.Log(level, content);
+            using(logger.BeginScope(("DevKitSource", source)))
+                logger.Log(level, content);
         }
     }
     

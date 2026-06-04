@@ -42,6 +42,9 @@ public class KitchenFiles(Config config) : ITotService
 
     public FileInfo ModInfo =>
         new FileInfo(Path.Join(ModFolder.FullName, Constants.ModInfosFile)).GetProperCasedFileInfo();
+    
+    public FileInfo ModStatus =>
+        new FileInfo(Path.Join(ModFolder.FullName, Constants.ModStatusFile)).GetProperCasedFileInfo();
 
     public DirectoryInfo ModLocalFolder =>
         new DirectoryInfo(Path.Join(ModFolder.FullName, Constants.LocalDirModLocal)).GetProperCasedDirectoryInfo();
@@ -222,5 +225,17 @@ public class KitchenFiles(Config config) : ITotService
     public bool IsModPathValid()
     {
         return ModInfo.Exists;
+    }
+
+    public async Task<ModStatus> GetModStatus()
+    {
+        var json = await File.ReadAllTextAsync(ModStatus.FullName);
+        return JsonSerializer.Deserialize(json, ModStatusJsonContext.Default.ModStatus) ?? new ModStatus();
+    }
+    
+    public async Task SetModStatus(ModStatus data)
+    {
+        var json = JsonSerializer.Serialize(data, ModStatusJsonContext.Default.ModStatus);
+        await File.WriteAllTextAsync(ModStatus.FullName, json);
     }
 }

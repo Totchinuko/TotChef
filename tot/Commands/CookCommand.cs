@@ -70,7 +70,7 @@ public class CookCommand(ILogger<CookCommand> logger,GitHandler git, KitchenFile
 
             await stove.StartCooking(cancellationToken, Verbose, ToAlternateOutputDir);
             if (!stove.WasSuccess)
-                throw new Exception($"Cooking failed. {stove.Errors} Error(s)");
+                throw new Exception($"Cooking failed. {stove.CurrentStatus.ErrorLogs.Count} Error(s)");
         }
         catch (Exception ex)
         {

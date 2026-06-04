@@ -17,6 +17,7 @@ public static class Constants
 
     public const string ActiveFile = "active.txt";
     public const string ModInfosFile = "modinfo.json";
+    public const string ModStatusFile = "modstatus.json";
     public const string CookInfosFile = "CookInfo.ini";
     public const string VersionFile = "version.txt";
     public const string UProject = "ConanSandbox.uproject";
