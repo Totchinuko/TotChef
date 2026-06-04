@@ -37,7 +37,6 @@ internal static class Program
         rootCommand.AddCommand(SwitchCommand.Command);
         rootCommand.AddCommand(ValidateCommand.Command);
         rootCommand.AddCommand(VersionCommand.Command);
-        rootCommand.AddCommand(NoteCommand.Command);
         rootCommand.AddCommand(UploadCommand.Command);
         rootCommand.AddCommand(VisibilityCommand.Command);
         rootCommand.AddCommand(TagsCommand.Command);
