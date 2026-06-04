@@ -14,6 +14,8 @@ public class SteamWorks(KitchenFiles kitchenFiles, ILogger<SteamWorks> logger)
     private bool _uploading;
     private UGCUpdateHandle_t? _uploadHandle;
     private CallResult<CreateItemResult_t>? _createItemResult;
+    private string _action = string.Empty;
+    private double _last = 0;
 
     public async Task<bool> InitializeSteam()
     {
@@ -67,7 +69,12 @@ public class SteamWorks(KitchenFiles kitchenFiles, ILogger<SteamWorks> logger)
         {
             SteamUGC.GetItemUpdateProgress(handle, out var processed, out var total);
             if (processed != 0 && total != 0)
-                logger.LogInformation($"Uploading:{processed}/{total}".Pastel(Constants.ColorBlue));
+            {
+                var percent = processed / (double)total;
+                if (Math.Abs(percent - _last) < 0.01) return;
+                _last = percent;
+                logger.LogInformation($"{_action}:{(_last * 100):N2}".Pastel(Constants.ColorBlue));
+            }
         }
     }
 
@@ -82,6 +89,7 @@ public class SteamWorks(KitchenFiles kitchenFiles, ILogger<SteamWorks> logger)
         
         logger.LogInformation($"Starting upload for {kitchenFiles.ModName}");
 
+        _action = "Initializing";
         var infos = await kitchenFiles.GetModInfos();
         if (!(await EnforceWorkshopId(infos)))
             throw new Exception("Failed to enforce the workshop ID");
@@ -150,6 +158,7 @@ public class SteamWorks(KitchenFiles kitchenFiles, ILogger<SteamWorks> logger)
     
     private async Task<UGCUpdateHandle_t?> MakeUpdateHandle(ModinfoData info, bool skipContent)
     {
+        _action = "Preparing";
         ModTags modTags;
         try
         {
@@ -195,6 +204,7 @@ public class SteamWorks(KitchenFiles kitchenFiles, ILogger<SteamWorks> logger)
         _uploading = true;
         _uploadHandle = handle;
         _pendingCalls++;
+        _action = "Uploading";
         logger.LogInformation("Submitting...");
         TaskCompletionSource<bool> tcs = new();
         SteamAPICall_t hApiCall = SteamUGC.SubmitItemUpdate(handle, changeNotes);
