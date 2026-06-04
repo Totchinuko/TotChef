@@ -25,6 +25,7 @@ public partial class Stove(KitchenFiles kitchenFiles, ILogger<Stove> logger, Con
         if(File.Exists(kitchenFiles.ModStatus.FullName))
             CurrentStatus = await kitchenFiles.GetModStatus();
         CurrentStatus.WasSuccess = false;
+        CurrentStatus.WasUploaded = false;
         CurrentStatus.LastActionDate = DateTime.UtcNow;
         CurrentStatus.ErrorLogs.Clear();
         await kitchenFiles.SetModStatus(CurrentStatus);
