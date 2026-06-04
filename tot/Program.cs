@@ -40,6 +40,7 @@ internal static class Program
         rootCommand.AddCommand(UploadCommand.Command);
         rootCommand.AddCommand(VisibilityCommand.Command);
         rootCommand.AddCommand(TagsCommand.Command);
+        rootCommand.AddCommand(ChangeNoteCommand.Command);
 
         var parser = new CommandLineBuilder(rootCommand)
             .UseDefaults()
