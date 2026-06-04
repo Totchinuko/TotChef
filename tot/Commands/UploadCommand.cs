@@ -28,8 +28,11 @@ public class UploadCommand(KitchenFiles files, SteamWorks steamworks, ILogger<Up
             files.SetModName(ModName);
             var status = await files.GetModStatus();
             await steamworks.UploadMod(token, SkipContent);
-            status.WasUploaded = true;
-            status.LastActionDate = DateTime.UtcNow;
+            if (!SkipContent)
+            {
+                status.WasUploaded = true;
+                status.LastActionDate = DateTime.UtcNow;
+            }
             await files.SetModStatus(status);
         }
         catch  (Exception ex)
