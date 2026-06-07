@@ -21,16 +21,17 @@ public class ListCommand(IConsole console, KitchenFiles files) : IInvokableComma
             {
                 files.SetModName(directory.Name);
                 var status = await files.GetModStatus();
+                var infos = await files.GetModInfos();
                 var stringDate =
                     $"{status.LastActionDate.ToLocalTime().ToShortDateString()} {status.LastActionDate.ToLocalTime().ToShortTimeString()}";
                 if (status.WasUploaded)
-                    console.WriteLine($"{directory.Name} [Uploaded][{stringDate}]"
+                    console.WriteLine($"[{infos.SteamWorkshopFileIds.MainClient}] {directory.Name} [Uploaded][{stringDate}]"
                             .Pastel(Constants.ColorBlue));
                 else if(status.WasSuccess)
-                    console.WriteLine($"{directory.Name} [Success][{stringDate}]"
+                    console.WriteLine($"[{infos.SteamWorkshopFileIds.MainClient}] {directory.Name} [Success][{stringDate}]"
                         .Pastel(Constants.ColorGreen));
                 else
-                    console.WriteLine($"{directory.Name} [Failed][{stringDate}][{status.ErrorLogs.Count} Error(s)]"
+                    console.WriteLine($"[{infos.SteamWorkshopFileIds.MainClient}] {directory.Name} [Failed][{stringDate}][{status.ErrorLogs.Count} Error(s)]"
                         .Pastel(Constants.ColorRed));
             }
             catch
