@@ -24,14 +24,15 @@ public class ListCommand(IConsole console, KitchenFiles files) : IInvokableComma
                 var infos = await files.GetModInfos();
                 var stringDate =
                     $"{status.LastActionDate.ToLocalTime().ToShortDateString()} {status.LastActionDate.ToLocalTime().ToShortTimeString()}";
+                console.WriteLine($"[{infos.SteamWorkshopFileIds.MainClient}] {directory.Name} - {infos.Name}");
                 if (status.WasUploaded)
-                    console.WriteLine($"[{infos.SteamWorkshopFileIds.MainClient}] {directory.Name} [Uploaded][{stringDate}]"
+                    console.WriteLine($"    [{stringDate}] Uploaded"
                             .Pastel(Constants.ColorBlue));
                 else if(status.WasSuccess)
-                    console.WriteLine($"[{infos.SteamWorkshopFileIds.MainClient}] {directory.Name} [Success][{stringDate}]"
+                    console.WriteLine($"    [{stringDate}] Successfully Cooked"
                         .Pastel(Constants.ColorGreen));
                 else
-                    console.WriteLine($"[{infos.SteamWorkshopFileIds.MainClient}] {directory.Name} [Failed][{stringDate}][{status.ErrorLogs.Count} Error(s)]"
+                    console.WriteLine($"    [{stringDate}] Failed to cook with {status.ErrorLogs.Count} Error(s)"
                         .Pastel(Constants.ColorRed));
             }
             catch
