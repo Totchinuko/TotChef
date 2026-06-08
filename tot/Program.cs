@@ -22,7 +22,6 @@ internal static class Program
         rootCommand.AddCommand(CheckoutCommand.Command);
         rootCommand.AddCommand(CleanCommand.Command);
         rootCommand.AddCommand(ConfigCommand.Command);
-        rootCommand.AddCommand(ConflictCommand.Command);
         rootCommand.AddCommand(CookCommand.Command);
         rootCommand.AddCommand(DescriptionCommand.Command);
         rootCommand.AddCommand(DevKitCommand.Command);
@@ -31,7 +30,6 @@ internal static class Program
         rootCommand.AddCommand(ModStatusCommand.Command);
         rootCommand.AddCommand(GhostCommand.Command);
         rootCommand.AddCommand(PathCommand.Command);
-        rootCommand.AddCommand(SearchCommand.Command);
         rootCommand.AddCommand(StatusCommand.Command);
         rootCommand.AddCommand(SwapCommand.Command);
         rootCommand.AddCommand(SwitchCommand.Command);
