@@ -1,7 +1,5 @@
 ﻿using System.CommandLine;
-using System.Xml;
 using Microsoft.Extensions.Logging;
-using Pastel;
 using Steamworks;
 using tot_lib;
 using tot_lib.CommandLine;

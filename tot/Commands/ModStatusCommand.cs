@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
-using System.Xml;
-using Pastel;
+using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
@@ -26,16 +25,16 @@ public class ModStatusCommand(IConsole console, KitchenFiles files) : IInvokable
                 $"{status.LastActionDate.ToLocalTime().ToShortDateString()} {status.LastActionDate.ToLocalTime().ToShortTimeString()}";
             if (status.WasUploaded)
                 console.WriteLine($"{ModName} [Uploaded][{stringDate}]"
-                    .Pastel(Constants.ColorBlue));
+                    .Colorize(ConsoleColors.BLUE));
             else if(status.WasSuccess)
                 console.WriteLine($"{ModName} [Success][{stringDate}]"
-                    .Pastel(Constants.ColorGreen));
+                    .Colorize(ConsoleColors.GREEN));
             else
             {
                 console.WriteLine($"{ModName} [Failed][{stringDate}][{status.ErrorLogs.Count} Error(s)]"
-                    .Pastel(Constants.ColorRed));
+                    .Colorize(ConsoleColors.RED));
                 foreach(string error in status.ErrorLogs)
-                    console.WriteLine($"    {error}".Pastel(Constants.ColorRed));
+                    console.WriteLine($"    {error}".Colorize(ConsoleColors.RED));
             }
         }
         catch

@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
-using System.Drawing;
-using Pastel;
+using tot_lib;
 using tot_lib.CommandLine;
 
 namespace Tot.Commands;
@@ -14,11 +13,11 @@ public class ConfigListCommand(IConsole console, Config config) : IInvokableComm
     
     public Task<int> InvokeAsync(CancellationToken token)
     {
-        console.WriteLine("Config list:".Pastel(Constants.ColorBlue));
+        console.WriteLine("Config list:".Colorize(ConsoleColors.BLUE));
         foreach (var prop in config.GetKeyList()) 
             console.WriteLine(
-                prop.Pastel(Constants.ColorOrange) + 
-                "=".Pastel(Constants.ColorGrey) + 
+                prop.Bold() + 
+                "=".Colorize(ConsoleColors.GREY) + 
                 config.GetValue(prop));
         return Task.FromResult(0);
     }

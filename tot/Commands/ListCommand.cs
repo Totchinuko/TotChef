@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
-using System.Xml;
-using Pastel;
+using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
 
@@ -27,13 +26,13 @@ public class ListCommand(IConsole console, KitchenFiles files) : IInvokableComma
                 console.WriteLine($"[{infos.SteamWorkshopFileIds.MainClient}] {directory.Name} - {infos.Name}");
                 if (status.WasUploaded)
                     console.WriteLine($"    [{stringDate}] Uploaded"
-                            .Pastel(Constants.ColorBlue));
+                            .Colorize(ConsoleColors.BLUE));
                 else if(status.WasSuccess)
                     console.WriteLine($"    [{stringDate}] Successfully Cooked"
-                        .Pastel(Constants.ColorGreen));
+                        .Colorize(ConsoleColors.GREEN));
                 else
                     console.WriteLine($"    [{stringDate}] Failed to cook with {status.ErrorLogs.Count} Error(s)"
-                        .Pastel(Constants.ColorRed));
+                        .Colorize(ConsoleColors.RED));
             }
             catch
             {

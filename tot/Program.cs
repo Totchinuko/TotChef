@@ -2,13 +2,12 @@
 using System.CommandLine.Builder;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
-using System.Drawing;
 using Microsoft.Extensions.DependencyInjection;
-using Pastel;
 using Serilog;
 using Serilog.Core;
 using Serilog.Templates;
 using Serilog.Templates.Themes;
+using tot_lib;
 using Tot.Commands;
 using tot.Services;
 
@@ -49,7 +48,7 @@ internal static class Program
                         .GetLayout()
                         .Skip(1)
                         .Prepend(hc => hc.Output.WriteLine("tot.exe is a CLI that provide helpers for modding Conan Exile, using .net, and is an Open Source project covered by the GNU General Public License version 2."))
-                        .Prepend(hc => hc.Output.WriteLine("Tot!Chet".Pastel(Constants.ColorOrange)))
+                        .Prepend(hc => hc.Output.WriteLine("Tot!Chet".Colorize(ConsoleColors.RED)))
                     );
             }).Build();
         

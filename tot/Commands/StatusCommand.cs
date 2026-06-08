@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.Logging;
-using Pastel;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
@@ -136,38 +135,38 @@ public class StatusCommand(ILogger<StatusCommand> logger, IConsole console, Kitc
         {
             var file = dir.Substring(files.DevKitContent.FullName.Length);
             if (dir.StartsWith(files.ModsShared.FullName))
-                console.Write($"Shared   ".Pastel(Constants.ColorPurple) + $"{file.PosixFullName()} [".Pastel(Constants.ColorGrey));
+                console.Write($"Shared   ".Colorize(ConsoleColors.MAGENTA) + $"{file.PosixFullName()} [".Colorize(ConsoleColors.GREY));
             else if (dir.StartsWith(files.ModLocalFolder.FullName))
-                console.Write($"Local    ".Pastel(Constants.ColorAccent) + $"{file.PosixFullName()} [".Pastel(Constants.ColorGrey));
+                console.Write($"Local    ".Colorize(ConsoleColors.CYAN) + $"{file.PosixFullName()} [".Colorize(ConsoleColors.GREY));
             else if (dir.StartsWith(files.ModContentFolder.FullName))
-                console.Write($"Override ".Pastel(Constants.ColorOrange) + $"{file.PosixFullName()} [".Pastel(Constants.ColorGrey));
+                console.Write($"Override ".Colorize(ConsoleColors.YELLOW) + $"{file.PosixFullName()} [".Colorize(ConsoleColors.GREY));
             else
-                console.Write($"Other    ".Pastel(Constants.ColorYellow) + $"{file.PosixFullName()} [".Pastel(Constants.ColorGrey));
+                console.Write($"Other    ".Colorize(ConsoleColors.BLUE) + $"{file.PosixFullName()} [".Colorize(ConsoleColors.GREY));
 
             if (includedDir.TryGetValue(dir, out var value))
-                console.Write($"+{value.Count}".Pastel(Constants.ColorGreen));
+                console.Write($"+{value.Count}".Colorize(ConsoleColors.GREEN));
             if (excludedDir.TryGetValue(dir, out var value1))
-                console.Write($"-{value1.Count}".Pastel(Constants.ColorRed));
+                console.Write($"-{value1.Count}".Colorize(ConsoleColors.RED));
             if (absentDir.TryGetValue(dir, out var value2))
-                console.Write($"!{value2.Count}".Pastel(Constants.ColorYellow));
+                console.Write($"!{value2.Count}".Colorize(ConsoleColors.YELLOW));
             if (notFounDir.TryGetValue(dir, out var value3))
-                console.Write($"?{value3.Count}".Pastel(Constants.ColorPurple));
-            console.Write("]\n".Pastel(Constants.ColorGrey));
+                console.Write($"?{value3.Count}".Colorize(ConsoleColors.MAGENTA));
+            console.Write("]\n".Colorize(ConsoleColors.GREY));
 
             if (!string.IsNullOrEmpty(filter))
             {
                 if (includedDir.TryGetValue(dir, out var value4))
                     foreach (var v in value4)
-                        console.WriteLine($"+{v}".Pastel(Constants.ColorGreen));
+                        console.WriteLine($"+{v}".Colorize(ConsoleColors.GREEN));
                 if (excludedDir.TryGetValue(dir, out var value5))
                     foreach (var v in value5)
-                        console.WriteLine($"-{v}".Pastel(Constants.ColorRed));
+                        console.WriteLine($"-{v}".Colorize(ConsoleColors.RED));
                 if (absentDir.TryGetValue(dir, out var value6))
                     foreach (var v in value6)
-                        console.WriteLine($"!{v}".Pastel(Constants.ColorYellow));
+                        console.WriteLine($"!{v}".Colorize(ConsoleColors.YELLOW));
                 if (notFounDir.TryGetValue(dir, out var value7))
                     foreach (var v in value7)
-                        console.WriteLine($"?{v}".Pastel(Constants.ColorPurple));
+                        console.WriteLine($"?{v}".Colorize(ConsoleColors.MAGENTA));
             }
         }
     }

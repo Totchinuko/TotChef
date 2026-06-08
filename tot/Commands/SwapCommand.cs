@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.Logging;
-using Pastel;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;
@@ -83,7 +82,7 @@ public class SwapCommand(KitchenFiles files, KitchenClerk clerk, ILogger<SwapCom
             await clerk.SetCookInfo(cookInfo);
 
             foreach (var swappedFile  in added)
-                console.WriteLine(((Exclude ? "- " : "+ ") + swappedFile ).Pastel(Exclude ? Constants.ColorRed : Constants.ColorGreen));
+                console.WriteLine(((Exclude ? "- " : "+ ") + swappedFile ).Colorize(Exclude ? ConsoleColors.RED : ConsoleColors.GREEN));
         }
         catch (Exception ex)
         {

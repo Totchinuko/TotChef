@@ -1,8 +1,6 @@
 ﻿using System.CommandLine;
 using System.Text;
-using System.Xml;
 using Microsoft.Extensions.Logging;
-using Pastel;
 using tot_lib;
 using tot_lib.CommandLine;
 using tot.Services;

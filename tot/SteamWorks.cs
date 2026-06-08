@@ -1,8 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
-using Pastel;
 using Steamworks;
 using tot.Services;
-using System.Threading;
+using tot_lib;
 
 namespace Tot;
 
@@ -73,7 +72,7 @@ public class SteamWorks(KitchenFiles kitchenFiles, ILogger<SteamWorks> logger)
                 var percent = processed / (double)total;
                 if (Math.Abs(percent - _last) < 0.01) return;
                 _last = percent;
-                logger.LogInformation($"{_action}:{(_last * 100):N2}".Pastel(Constants.ColorBlue));
+                logger.LogInformation($"{_action}:{(_last * 100):N2}".Colorize(ConsoleColors.BLUE));
             }
         }
     }
