@@ -23,20 +23,22 @@ public class ListCommand(IConsole console, KitchenFiles files) : IInvokableComma
                 var infos = await files.GetModInfos();
                 var stringDate =
                     $"{status.LastActionDate.ToLocalTime().ToShortDateString()} {status.LastActionDate.ToLocalTime().ToShortTimeString()}";
-                console.WriteLine($"[{infos.SteamWorkshopFileIds.MainClient}] {directory.Name} - {infos.Name}");
+                
+                console.Write($"[{infos.SteamWorkshopFileIds.MainClient}]");
+                console.Write($" {directory.Name} {infos.VersionMajor}.{infos.VersionMinor}.{infos.VersionBuild}".PadRight(32));
                 if (status.WasUploaded)
-                    console.WriteLine($"    [{stringDate}] Uploaded"
-                            .Colorize(ConsoleColors.BLUE));
+                    console.Write($"[{stringDate}] Uploaded".Colorize(ConsoleColors.BLUE));
                 else if(status.WasSuccess)
-                    console.WriteLine($"    [{stringDate}] Successfully Cooked"
-                        .Colorize(ConsoleColors.GREEN));
+                    console.Write($"[{stringDate}] Successfully Cooked".Colorize(ConsoleColors.GREEN));
                 else
-                    console.WriteLine($"    [{stringDate}] Failed to cook with {status.ErrorLogs.Count} Error(s)"
+                    console.Write($"[{stringDate}] Failed to cook with {status.ErrorLogs.Count} Error(s)"
                         .Colorize(ConsoleColors.RED));
+                console.Write(ConsoleColors.NL);
             }
             catch
             {
-                console.WriteLine(directory.Name);
+                
+                console.WriteLine(new string(' ', 13) + directory.Name);
             }
         }
         return 0;
