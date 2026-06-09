@@ -1,11 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.CommandLine;
+using Microsoft.Extensions.Logging;
 using Steamworks;
 using tot.Services;
 using tot_lib;
 
 namespace Tot;
 
-public class SteamWorks(KitchenFiles kitchenFiles, ILogger<SteamWorks> logger)
+public class SteamWorks(IConsole console, KitchenFiles kitchenFiles, ILogger<SteamWorks> logger)
 {
     private bool _initialized;
     private Timer? _callbackTimer;
@@ -72,7 +73,8 @@ public class SteamWorks(KitchenFiles kitchenFiles, ILogger<SteamWorks> logger)
                 var percent = processed / (double)total;
                 if (Math.Abs(percent - _last) < 0.01) return;
                 _last = percent;
-                logger.LogInformation($"{_action}:{(_last * 100):N2}".Colorize(ConsoleColors.BLUE));
+                //logger.LogInformation($"{_action}:{(_last * 100):N2}".Colorize(ConsoleColors.BLUE));
+                console.Write($"\r{_action}:{(_last * 100):N2}%".Colorize(ConsoleColors.BLUE).PadRight(50));
             }
         }
     }
@@ -219,6 +221,7 @@ public class SteamWorks(KitchenFiles kitchenFiles, ILogger<SteamWorks> logger)
             else
             {
                 _uploading = false;
+                console.Write(Environment.NewLine);
                 logger.LogInformation("Mod uploaded successfully");
                 tcs.TrySetResult(true);
             }
