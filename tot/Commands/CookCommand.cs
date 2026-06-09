@@ -64,8 +64,8 @@ public class CookCommand(ILogger<CookCommand> logger,GitHandler git, KitchenFile
             if (!NoVersionBump)
             {
                 await clerk.AutoBumpBuild();
-                //await clerk.UpdateModDevKitVersion(); ?Not needed anymore?
             }
+            await clerk.UpdateModDevKitVersion();
             logger.LogInformation("Cooking {mod}...", files.ModName);
 
             await stove.StartCooking(cancellationToken, Verbose, ToAlternateOutputDir);

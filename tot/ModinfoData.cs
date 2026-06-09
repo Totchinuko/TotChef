@@ -42,9 +42,9 @@ public class ModinfoData
 
     [JsonPropertyName("folderName")] public string FolderName { get; set; } = string.Empty;
 
-    [JsonPropertyName("revisionNumber")] public int RevisionNumber { get; set; } = 0;
+    [JsonPropertyName("devkitRevisionNumber")] public int DevkitRevisionNumber { get; set; } = 0;
 
-    [JsonPropertyName("snapshotId")] public int SnapshotId { get; set; } = 0;
+    [JsonPropertyName("devkitSnapshotId")] public int DevkitSnapshotId { get; set; } = 0;
 
     [JsonPropertyName("fileSize")] public int FileSize { get; set; } = -2;
     

@@ -54,13 +54,13 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git) : I
     {
         var infos = await files.GetModInfos();
         var devkit = await GetDevKitVersion();
-        if (infos.RevisionNumber == devkit.Revision && infos.SnapshotId == devkit.SnapshotId) return;
+        if (infos.DevkitRevisionNumber == devkit.Revision && infos.DevkitSnapshotId == devkit.SnapshotId) return;
         
         if (await git.IsGitRepoInvalidOrDirty(files.ModFolder))
             throw new Exception("Mod repository is dirty");
 
-        infos.RevisionNumber = devkit.Revision;
-        infos.SnapshotId = devkit.SnapshotId;
+        infos.DevkitRevisionNumber = devkit.Revision;
+        infos.DevkitSnapshotId = devkit.SnapshotId;
         await files.SetModInfos(infos);
         await git.CommitFile(files.ModFolder, files.ModInfo,
             string.Format(
@@ -88,18 +88,24 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git) : I
                 data.VersionMajor, data.VersionMinor, data.VersionBuild));
     }
 
-    public async Task<DevKitVersion> GetDevKitVersion()
+    public Task<DevKitVersion> GetDevKitVersion()
     {
-        var content = await files.GetDevKitVersion();
-        var regex = new Regex(@"([0-9]+)\.([0-9]+)");
-        var result = regex.Match(content);
-        if (!result.Success)
-            throw new Exception("Version is invalid");
-        return new DevKitVersion
+        // var content = await files.GetDevKitVersion();
+        // var regex = new Regex(@"([0-9]+)\.([0-9]+)");
+        // var result = regex.Match(content);
+        // if (!result.Success)
+        //     throw new Exception("Version is invalid");
+        // return new DevKitVersion
+        // {
+        //     Revision = int.Parse(result.Groups[1].Value),
+        //     SnapshotId = int.Parse(result.Groups[2].Value)
+        // };
+
+        return Task.FromResult(new DevKitVersion()
         {
-            Revision = int.Parse(result.Groups[1].Value),
-            SnapshotId = int.Parse(result.Groups[2].Value)
-        };
+            Revision = config.DevkitRevision,
+            SnapshotId = config.DevkitSnapshot
+        });
     }
 
     public async Task<string> QueryPakFile(FileInfo file)

@@ -22,6 +22,9 @@ public class Config : ITotService
 
     public string DefaultCliEditor { get; set; } = "nano";
 
+    public int DevkitRevision { get; set; } = 0;
+    public int DevkitSnapshot { get; set; } = 0;
+
     [JsonIgnore] public bool IsValid => !string.IsNullOrEmpty(DevKitPath);
 
     public static Config LoadConfig()
@@ -70,7 +73,7 @@ public class Config : ITotService
                 break;
             case nameof(AutoBumpBuild):
                 if (!bool.TryParse(value, out var b))
-                    throw new Exception("Invalid value for AutoBumpBuild");
+                    throw new Exception($"Invalid value for {nameof(AutoBumpBuild)}");
                 AutoBumpBuild = b;
                 break;
             case nameof(DefaultCliEditor):
@@ -81,6 +84,16 @@ public class Config : ITotService
                 break;
             case nameof(AlternateOutputFolder):
                 AlternateOutputFolder = value;
+                break;
+            case nameof(DevkitRevision):
+                if (!int.TryParse(value, out var i))
+                    throw new Exception($"Invalid value for {nameof(DevkitRevision)}");
+                DevkitRevision = i;
+                break;
+            case nameof(DevkitSnapshot):
+                if (!int.TryParse(value, out var snapshot))
+                    throw new Exception($"Invalid value for {nameof(DevkitSnapshot)}");
+                DevkitSnapshot = snapshot;
                 break;
             default:
                 throw new Exception($"Invalid key: {key}");
@@ -95,7 +108,9 @@ public class Config : ITotService
             nameof(AutoBumpBuild),
             nameof(DefaultCliEditor),
             nameof(GitBinary),
-            nameof(AlternateOutputFolder)
+            nameof(AlternateOutputFolder),
+            nameof(DevkitRevision),
+            nameof(DevkitSnapshot)
         ];
     }
 
@@ -108,6 +123,8 @@ public class Config : ITotService
             nameof(DefaultCliEditor) => DefaultCliEditor,
             nameof(GitBinary) => GitBinary,
             nameof(AlternateOutputFolder) => AlternateOutputFolder,
+            nameof(DevkitRevision) => DevkitRevision.ToString(),
+            nameof(DevkitSnapshot) => DevkitSnapshot.ToString(),
             _ => throw new Exception($"Invalid key: {key}")
         };
     }
