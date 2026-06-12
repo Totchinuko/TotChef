@@ -211,10 +211,10 @@ public class SteamWorks(IConsole console, KitchenFiles kitchenFiles, ILogger<Ste
         SteamAPICall_t hApiCall = SteamUGC.SubmitItemUpdate(handle, changeNotes);
         CallResult<SubmitItemUpdateResult_t>.Create().Set(hApiCall, delegate(SubmitItemUpdateResult_t callback, bool failure)
         {
+            _pendingCalls--;
             if (failure || callback.m_eResult != EResult.k_EResultOK)
             {
                 _uploading = false;
-                _pendingCalls--;
                 logger.LogCritical("Steam upload failed");
                 tcs.TrySetResult(false);
             }
