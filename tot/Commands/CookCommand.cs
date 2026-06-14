@@ -47,18 +47,29 @@ public class CookCommand(ILogger<CookCommand> logger,GitHandler git, KitchenFile
             logger.LogInformation("{mod} is now active", files.ModName);
 
             var cookInfos = await clerk.GetCookInfo();
+            var cleaned = clerk.RemoveMissingFiles(cookInfos);
             var change = clerk.UpdateIncludedCookInfo(files.ModLocalFolder, cookInfos);
 
-            if (change.Count > 0)
+            if (change.Count > 0 || cleaned.Count > 0)
             {
                 if (Force)
                     await clerk.SetCookInfo(cookInfos);
                 else
                     await clerk.SetCookInfoAndCommit(cookInfos);
-                logger.LogWarning("Added {changes} missing local mod files to cooking", change.Count);
-                using(logger.BeginScope(("DevKitSource", "CookInfoChanges")))
-                    foreach (var c in change)
-                        logger.LogWarning(c);
+                if (cleaned.Count > 0)
+                {
+                    logger.LogWarning("Cleaned {changes} files that are not found", cleaned.Count);
+                    using(logger.BeginScope(("DevKitSource", "CookInfoChanges")))
+                        foreach (var c in cleaned)
+                            logger.LogWarning(c);
+                }
+                if (change.Count > 0)
+                {
+                    logger.LogWarning("Added {changes} missing local mod files to cooking", change.Count);
+                    using(logger.BeginScope(("DevKitSource", "CookInfoChanges")))
+                        foreach (var c in change)
+                            logger.LogWarning(c);
+                }
             }
 
             if (!NoVersionBump)
