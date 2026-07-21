@@ -22,7 +22,15 @@ public class TagsCommand(KitchenFiles files, GitHandler git, Config config, ILog
         try
         {
             files.SetModName(ModName);
-            var tags = await files.GetModTags();
+            ModTags tags;
+            try
+            {
+                tags = await files.GetModTags();
+            }
+            catch
+            {
+                tags = new ModTags();
+            }
             var notSet = Constants.SteamTags.ToList();
             notSet.RemoveAll(x => tags.Tags.Contains(x));
             StringBuilder text = new();
