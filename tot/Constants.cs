@@ -74,8 +74,10 @@ public static class Constants
     public const string GitCommitCookinfoMessage = "Update cooking infos";
     public const string GitCommitDescriptionMessage = "Update mod description";
     public const string GitCommitChangeNoteMessage = "Update mod change note";
+
+    public const string DevkitMinimumVersionEnhanced = "Enhanced";
     
     public const string ConfigFileName = "config_enhanced.json";
 
     public const string PatchNoteFile = ".patch";
-    }
+}

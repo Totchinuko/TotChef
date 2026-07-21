@@ -61,6 +61,7 @@ public class KitchenClerk(Config config, KitchenFiles files, GitHandler git) : I
 
         infos.DevkitRevisionNumber = devkit.Revision;
         infos.DevkitSnapshotId = devkit.SnapshotId;
+        infos.MinimumVersion = Constants.DevkitMinimumVersionEnhanced;
         await files.SetModInfos(infos);
         await git.CommitFile(files.ModFolder, files.ModInfo,
             string.Format(
