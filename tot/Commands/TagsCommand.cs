@@ -55,7 +55,7 @@ public class TagsCommand(KitchenFiles files, GitHandler git, Config config, ILog
         }
         catch  (Exception ex)
         {
-            logger.LogCritical(ex, "Failed to upload mod");
+            logger.LogCritical(ex, "Failed to edit tags");
             return ex.GetErrorCode();
         }
         return 0;
