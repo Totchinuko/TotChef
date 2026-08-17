@@ -49,4 +49,7 @@ public class ModinfoData
     [JsonPropertyName("fileSize")] public int FileSize { get; set; } = -2;
     
     [JsonPropertyName("minimumVersion")] public string MinimumVersion { get; set; } = string.Empty;
+
+    [JsonPropertyName("requestedHttpOrigins")]
+    public List<HttpOrigin> RequestedHttpOrigins { get; set; } = new();
 }
