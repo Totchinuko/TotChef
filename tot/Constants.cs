@@ -66,6 +66,7 @@ public static class Constants
     ];
 
     public static readonly string[] EditorArgs = ["-ModDevKit"];
+    public static string EditorNoLinkerObjectBounds = "-dpcvars=Serialization.EnforceLinkerObjectBounds=0";
     
     public const string GitCommitVersionMessage = "Bump version to {0}.{1}.{2}";
     public const string GitCommitVisibilityMessage = "Change mod visibility";

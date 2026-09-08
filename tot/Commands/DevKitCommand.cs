@@ -16,11 +16,14 @@ public class DevKitCommand(GitHandler git, ILogger<DevKitCommand> logger, Kitche
         .Options.AddModName((c, v) => c.ModName = v)
         .Options.Create<bool>("--force-branch", "Use the current branch without trying to interfer").AddAlias("-f")
         .SetSetter((c, v) => c.ForceBranch = v).BuildOption()
+        .Options.Create<bool>("--disable-linker", "Disabled Serialization.EnforceLinkerObjectBounds").AddAlias("-dl")
+        .SetSetter((c, v) => c.DisabledLinker = v).BuildOption()
         .BuildCommand();
     
     public string ModName { get; set; } = string.Empty;
 
     public bool ForceBranch { get; set; } = false;
+    public bool DisabledLinker { get; set; } = false;
 
     public async Task<int> InvokeAsync(CancellationToken token)
     {
@@ -37,8 +40,10 @@ public class DevKitCommand(GitHandler git, ILogger<DevKitCommand> logger, Kitche
             files.CreateActive();
             logger.LogInformation("Set {mod} as active", files.ModName);
 
+            var args = new List<string>(Constants.EditorArgs);
+            if(DisabledLinker) args.Add(Constants.EditorNoLinkerObjectBounds);
             Process.Start(files.Ue4Editor.FullName,
-                string.Join(" ", files.UProject.FullName, string.Join(" ", Constants.EditorArgs)));
+                string.Join(" ", files.UProject.FullName, string.Join(" ", args)));
         }
         catch (Exception ex)
         {
