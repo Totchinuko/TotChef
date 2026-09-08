@@ -46,7 +46,8 @@ public class ModinfoData
 
     [JsonPropertyName("devkitSnapshotId")] public int DevkitSnapshotId { get; set; } = 0;
 
-    [JsonPropertyName("fileSize")] public int FileSize { get; set; } = -2;
+    // Removed in 2.2
+    //[JsonPropertyName("fileSize")] public int FileSize { get; set; } = -2;
     
     [JsonPropertyName("minimumVersion")] public string MinimumVersion { get; set; } = string.Empty;
 
